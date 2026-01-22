@@ -44,6 +44,8 @@ import {
   Zap,
   ChevronDown,
   ChevronRight,
+  Copy,
+  Check,
 } from "lucide-react";
 import {
   format,
@@ -134,6 +136,7 @@ export function ExecutiveRoadmapView({
   const [specialtyFilter, setSpecialtyFilter] = useState<string[]>([]);
   const [clientFilter, setClientFilter] = useState<string[]>([]);
   const [inProgressExpanded, setInProgressExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [startDate, setStartDate] = useState(() =>
     initialStartDate ? new Date(initialStartDate) : startOfQuarter(new Date())
   );
@@ -301,6 +304,47 @@ export function ExecutiveRoadmapView({
     return initiatives.filter((i) => i.status === "IN_PROGRESS").length;
   }, [initiatives]);
 
+  const copyInProgressToClipboard = async () => {
+    const lines: string[] = [];
+    lines.push("What's In Progress");
+    lines.push("==================\n");
+
+    inProgressByClient.forEach((group) => {
+      lines.push(`📁 ${group.client?.name || "Internal / No Client"}`);
+      lines.push("");
+
+      group.initiatives.forEach((init) => {
+        // Get delivery date
+        let deliveryInfo = "";
+        if (init.betaTargetDate) {
+          deliveryInfo = ` [Beta: ${format(new Date(init.betaTargetDate), "MMM d")}]`;
+        } else if (init.masterTargetDate) {
+          deliveryInfo = ` [Release: ${format(new Date(init.masterTargetDate), "MMM d")}]`;
+        } else if (init.scheduledBlocks.length > 0) {
+          const latestBlock = init.scheduledBlocks.reduce((latest, block) =>
+            new Date(block.endDate) > new Date(latest.endDate) ? block : latest
+          );
+          deliveryInfo = ` [Est. completion: ${format(new Date(latestBlock.endDate), "MMM d")}]`;
+        }
+
+        // Get summary
+        const fullText = init.executiveOverview || init.description || "";
+        const firstSentence = fullText.split(/[.!?]\s/)[0];
+        const summary = firstSentence ? (firstSentence.endsWith('.') ? firstSentence : firstSentence + ".") : "";
+
+        lines.push(`  • ${init.title}${deliveryInfo}`);
+        if (summary) {
+          lines.push(`    ${summary}`);
+        }
+        lines.push("");
+      });
+    });
+
+    await navigator.clipboard.writeText(lines.join("\n"));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -372,22 +416,47 @@ export function ExecutiveRoadmapView({
         <div className="border-b bg-muted/20">
           <div className="max-w-7xl mx-auto px-4 py-6">
             <Card>
-              <CardHeader
-                className="pb-3 cursor-pointer select-none"
-                onClick={() => setInProgressExpanded(!inProgressExpanded)}
-              >
+              <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Zap className="h-5 w-5 text-yellow-500" />
-                    What&apos;s in Progress
-                    <span className="text-sm font-normal text-muted-foreground">
-                      ({inProgressCount})
-                    </span>
-                  </CardTitle>
-                  {inProgressExpanded ? (
-                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                  ) : (
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  <div
+                    className="flex items-center gap-2 cursor-pointer select-none flex-1"
+                    onClick={() => setInProgressExpanded(!inProgressExpanded)}
+                  >
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Zap className="h-5 w-5 text-yellow-500" />
+                      What&apos;s in Progress
+                      <span className="text-sm font-normal text-muted-foreground">
+                        ({inProgressCount})
+                      </span>
+                    </CardTitle>
+                    {inProgressExpanded ? (
+                      <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                    ) : (
+                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    )}
+                  </div>
+                  {inProgressExpanded && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        copyInProgressToClipboard();
+                      }}
+                      className="gap-2"
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="h-4 w-4" />
+                          Copied
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4" />
+                          Copy
+                        </>
+                      )}
+                    </Button>
                   )}
                 </div>
               </CardHeader>
