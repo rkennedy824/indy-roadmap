@@ -527,15 +527,17 @@ export function InitiativeDetailView({
                 value={formData.status}
                 onValueChange={(value) => setFormData({ ...formData, status: value as InitiativeStatus })}
               >
-                <SelectTrigger className="w-[140px] h-8">
-                  <Badge className={STATUS_COLORS[formData.status]} variant="secondary">
+                <SelectTrigger className="w-[140px] h-8 border-none p-0 focus:ring-0">
+                  <Badge className={cn(STATUS_COLORS[formData.status], "cursor-pointer")} variant="secondary">
                     {formData.status.replace("_", " ")}
                   </Badge>
                 </SelectTrigger>
                 <SelectContent>
                   {STATUSES.map((status) => (
                     <SelectItem key={status.value} value={status.value}>
-                      {status.label}
+                      <Badge className={STATUS_COLORS[status.value]} variant="secondary">
+                        {status.label}
+                      </Badge>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -578,21 +580,28 @@ export function InitiativeDetailView({
               })}
 
               {/* Add Tag */}
-              <Select onValueChange={addTag}>
-                <SelectTrigger className="w-[120px] h-7 text-xs">
-                  <Plus className="h-3 w-3 mr-1" />
-                  Add tag
-                </SelectTrigger>
-                <SelectContent>
-                  {specialties
-                    .filter((s) => !selectedTags.includes(s.id))
-                    .map((specialty) => (
-                      <SelectItem key={specialty.id} value={specialty.id}>
-                        {specialty.name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
+              {specialties.filter((s) => !selectedTags.includes(s.id)).length > 0 && (
+                <Select value="" onValueChange={addTag}>
+                  <SelectTrigger className="w-[120px] h-7 text-xs">
+                    <Plus className="h-3 w-3 mr-1" />
+                    <span>Add tag</span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {specialties
+                      .filter((s) => !selectedTags.includes(s.id))
+                      .map((specialty) => (
+                        <SelectItem key={specialty.id} value={specialty.id}>
+                          <span
+                            className="flex items-center gap-2"
+                            style={{ color: specialty.color || undefined }}
+                          >
+                            {specialty.name}
+                          </span>
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
 
