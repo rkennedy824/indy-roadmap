@@ -373,94 +373,147 @@ export function ClientRoadmapView({
         open={!!selectedInitiative}
         onOpenChange={() => setSelectedInitiative(null)}
       >
-        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto p-0">
           {selectedInitiative && (
-            <div className="px-6 py-2">
-              <SheetHeader className="mb-4">
-                <SheetTitle className="text-xl pr-8">{selectedInitiative.title}</SheetTitle>
-                <SheetDescription>
-                  <Badge variant="secondary">
-                    {getSimplifiedStatus(selectedInitiative.status)}
-                  </Badge>
-                </SheetDescription>
-              </SheetHeader>
-              <div className="space-y-6">
-                {/* Release Schedule - at the top for quick visibility */}
-                {(selectedInitiative.betaTargetDate || selectedInitiative.masterTargetDate) && (
-                  <div>
-                    <h4 className="font-medium mb-2 text-sm">Target Release Dates</h4>
-                    <div className="border rounded-lg px-3 py-2 space-y-1 bg-muted/30">
-                      {selectedInitiative.betaTargetDate && (
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-sm">
-                            <Rocket className="h-4 w-4 text-blue-500" />
-                            <span className="font-medium">Beta Release</span>
-                          </div>
-                          <span className="text-sm font-medium">
-                            {format(
-                              new Date(selectedInitiative.betaTargetDate),
-                              "MMMM d, yyyy"
-                            )}
-                          </span>
+            <>
+              {/* Header with gradient background */}
+              <div
+                className="px-6 pt-8 pb-6"
+                style={{
+                  background: `linear-gradient(135deg, ${selectedInitiative.tags[0]?.specialty.color || '#6366f1'}15 0%, transparent 100%)`,
+                }}
+              >
+                <SheetHeader className="space-y-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <SheetTitle className="text-xl font-semibold leading-tight pr-4">
+                      {selectedInitiative.title}
+                    </SheetTitle>
+                  </div>
+                  <SheetDescription asChild>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="secondary"
+                        className="font-medium"
+                        style={{
+                          backgroundColor: selectedInitiative.status === "IN_PROGRESS"
+                            ? "rgb(34 197 94 / 0.15)"
+                            : selectedInitiative.status === "DONE"
+                            ? "rgb(34 197 94 / 0.2)"
+                            : undefined,
+                          color: selectedInitiative.status === "IN_PROGRESS" || selectedInitiative.status === "DONE"
+                            ? "rgb(22 163 74)"
+                            : undefined,
+                        }}
+                      >
+                        {getSimplifiedStatus(selectedInitiative.status)}
+                      </Badge>
+                      {selectedInitiative.tags.length > 0 && (
+                        <div className="flex gap-1.5">
+                          {selectedInitiative.tags.slice(0, 2).map((tag) => (
+                            <Badge
+                              key={tag.id}
+                              variant="outline"
+                              className="text-xs font-normal"
+                              style={{
+                                borderColor: tag.specialty.color || undefined,
+                                color: tag.specialty.color || undefined,
+                              }}
+                            >
+                              {tag.specialty.name}
+                            </Badge>
+                          ))}
                         </div>
                       )}
-                      {selectedInitiative.masterTargetDate && (
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-sm">
-                            <Rocket className="h-4 w-4 text-green-500" />
-                            <span className="font-medium">Production Release</span>
+                    </div>
+                  </SheetDescription>
+                </SheetHeader>
+              </div>
+
+              <div className="px-6 pb-8 space-y-6">
+                {/* Release Dates Card */}
+                {(selectedInitiative.betaTargetDate || selectedInitiative.masterTargetDate) && (
+                  <div className="rounded-xl border bg-card p-4 shadow-sm">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                      Release Timeline
+                    </h4>
+                    <div className="space-y-3">
+                      {selectedInitiative.betaTargetDate && (
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/10">
+                            <Rocket className="h-5 w-5 text-blue-500" />
                           </div>
-                          <span className="text-sm font-medium">
-                            {format(
-                              new Date(selectedInitiative.masterTargetDate),
-                              "MMMM d, yyyy"
-                            )}
-                          </span>
+                          <div className="flex-1">
+                            <div className="text-xs text-muted-foreground">Beta Release</div>
+                            <div className="font-semibold">
+                              {format(new Date(selectedInitiative.betaTargetDate), "MMMM d, yyyy")}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {selectedInitiative.betaTargetDate && selectedInitiative.masterTargetDate && (
+                        <div className="ml-5 border-l-2 border-dashed border-muted h-2" />
+                      )}
+                      {selectedInitiative.masterTargetDate && (
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500/10">
+                            <Rocket className="h-5 w-5 text-green-500" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="text-xs text-muted-foreground">Production Release</div>
+                            <div className="font-semibold">
+                              {format(new Date(selectedInitiative.masterTargetDate), "MMMM d, yyyy")}
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
                   </div>
                 )}
 
-                {/* Client Overview (AI-generated) or Description */}
-                {selectedInitiative.clientOverview ? (
-                  <div>
-                    <h4 className="font-semibold text-base mb-3 flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-primary" />
-                      About This Feature
+                {/* Description/Overview Card */}
+                {(selectedInitiative.clientOverview || selectedInitiative.description) && (
+                  <div className="rounded-xl border bg-card p-4 shadow-sm">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+                      {selectedInitiative.clientOverview && <Sparkles className="h-3.5 w-3.5" />}
+                      {selectedInitiative.clientOverview ? "About This Feature" : "Description"}
                     </h4>
-                    <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:text-base prose-headings:font-semibold prose-headings:mt-5 prose-headings:mb-2 prose-p:text-foreground/80 prose-p:leading-relaxed prose-p:mb-3 prose-ul:my-3 prose-li:text-foreground/80 prose-li:mb-1 prose-strong:text-foreground prose-strong:font-semibold">
-                      <ReactMarkdown>
-                        {selectedInitiative.clientOverview}
-                      </ReactMarkdown>
+                    {selectedInitiative.clientOverview ? (
+                      <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:text-sm prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-2 prose-p:text-foreground/80 prose-p:leading-relaxed prose-p:mb-3 prose-p:text-sm prose-ul:my-2 prose-ul:text-sm prose-li:text-foreground/80 prose-li:mb-1 prose-strong:text-foreground prose-strong:font-medium">
+                        <ReactMarkdown>
+                          {selectedInitiative.clientOverview}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-foreground/80 leading-relaxed">
+                        {selectedInitiative.description}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Work Types - only show if there are more than already shown in header */}
+                {selectedInitiative.tags.length > 2 && (
+                  <div>
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                      All Work Types
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedInitiative.tags.map((tag) => (
+                        <Badge
+                          key={tag.id}
+                          className="font-normal"
+                          style={{
+                            backgroundColor: tag.specialty.color || undefined,
+                          }}
+                        >
+                          {tag.specialty.name}
+                        </Badge>
+                      ))}
                     </div>
                   </div>
-                ) : selectedInitiative.description ? (
-                  <div>
-                    <h4 className="font-semibold text-base mb-2">Description</h4>
-                    <p className="text-sm text-foreground/80 leading-relaxed">
-                      {selectedInitiative.description}
-                    </p>
-                  </div>
-                ) : null}
-
-                <div>
-                  <h4 className="font-medium mb-2">Work Types</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedInitiative.tags.map((tag) => (
-                      <Badge
-                        key={tag.id}
-                        style={{
-                          backgroundColor: tag.specialty.color || undefined,
-                        }}
-                      >
-                        {tag.specialty.name}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
+                )}
               </div>
-            </div>
+            </>
           )}
         </SheetContent>
       </Sheet>
