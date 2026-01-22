@@ -1,0 +1,481 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// Authentication & Users
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String?
+  role          Role      @default(ADMIN)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions      Session[]
+  auditLogs     AuditLog[]
+  submittedIdeas Idea[]   @relation("IdeaSubmitter")
+  ownedIdeas    Idea[]    @relation("IdeaOwner")
+  ideaComments  IdeaComment[]
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  VIEWER
+  CLIENT
+}
+
+// ============================================
+// Engineer Management
+// ============================================
+
+model Engineer {
+  id              String   @id @default(cuid())
+  name            String
+  email           String?
+  role            String?  // e.g., "Senior Engineer", "Staff Engineer"
+  timezone        String   @default("America/New_York")
+  weeklyCapacity  Int      @default(40) // hours
+  workingDays     String   @default("1,2,3,4,5") // Mon-Fri (0=Sun, 6=Sat)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  specialties     EngineerSpecialty[]
+  unavailability  UnavailabilityBlock[]
+  scheduledBlocks ScheduledBlock[]
+  initiatives     Initiative[]
+  initiativeAssignments InitiativeAssignment[]
+  squadMemberships SquadMember[]
+}
+
+model Squad {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String?  // hex color for UI display
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     SquadMember[]
+  initiatives Initiative[]
+  initiativeAssignments InitiativeAssignment[]
+  scheduledBlocks ScheduledBlock[]
+}
+
+model SquadMember {
+  id        String   @id @default(cuid())
+  squadId   String
+  engineerId String
+  isLead    Boolean  @default(false)  // Squad lead/manager
+  createdAt DateTime @default(now())
+
+  squad     Squad    @relation(fields: [squadId], references: [id], onDelete: Cascade)
+  engineer  Engineer @relation(fields: [engineerId], references: [id], onDelete: Cascade)
+
+  @@unique([squadId, engineerId])
+}
+
+model Specialty {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  color       String?  // hex color for UI display
+  createdAt   DateTime @default(now())
+
+  engineers   EngineerSpecialty[]
+  initiatives InitiativeTag[]
+  ideaTags    IdeaTag[]
+}
+
+model EngineerSpecialty {
+  id           String         @id @default(cuid())
+  engineerId   String
+  specialtyId  String
+  level        SpecialtyLevel @default(PRIMARY)
+
+  engineer     Engineer  @relation(fields: [engineerId], references: [id], onDelete: Cascade)
+  specialty    Specialty @relation(fields: [specialtyId], references: [id], onDelete: Cascade)
+
+  @@unique([engineerId, specialtyId])
+}
+
+enum SpecialtyLevel {
+  PRIMARY
+  SECONDARY
+}
+
+model UnavailabilityBlock {
+  id         String            @id @default(cuid())
+  engineerId String
+  type       UnavailabilityType @default(PTO)
+  startDate  DateTime
+  endDate    DateTime
+  reason     String?
+  createdAt  DateTime          @default(now())
+
+  engineer   Engineer @relation(fields: [engineerId], references: [id], onDelete: Cascade)
+
+  @@index([engineerId, startDate, endDate])
+}
+
+enum UnavailabilityType {
+  PTO
+  TRAVEL
+  SICK
+  HOLIDAY
+  OTHER
+}
+
+// ============================================
+// Initiative Management
+// ============================================
+
+model Initiative {
+  id              String           @id @default(cuid())
+  title           String
+  description     String?
+  prdContent      String?          @db.Text // Markdown content
+  prdUrl          String?          // External link
+  status          InitiativeStatus @default(DRAFT)
+  priority        Int              @default(0) // higher = more important
+  effortEstimate  Float?           @default(1) // weeks
+  deadline        DateTime?
+
+  // Release targets (shown to clients)
+  betaTargetDate    DateTime?
+  masterTargetDate  DateTime?
+
+  // AI Documentation Input Fields (for regeneration)
+  docInputProblem           String?    @db.Text
+  docInputGoals             String?    @db.Text
+  docInputTargetUsers       String?    @db.Text
+  docInputKeyFeatures       String?    @db.Text
+  docInputSuccessMetrics    String?    @db.Text
+  docInputTechnicalNotes    String?    @db.Text
+
+  // Generated Documents (prdContent above used for full PRD)
+  executiveOverview         String?    @db.Text
+  clientOverview            String?    @db.Text
+  docsGeneratedAt           DateTime?
+
+  // Locking
+  lockAssignment  Boolean          @default(false)
+  lockDates       Boolean          @default(false)
+  lockedStart     DateTime?
+  lockedEnd       DateTime?
+
+  // Assignment (can be assigned to engineers, a squad, or both)
+  assignedEngineerId String?
+  assignedSquadId    String?
+
+  // Visibility
+  visibilityLevel VisibilityLevel  @default(INTERNAL)
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  assignedEngineer Engineer?        @relation(fields: [assignedEngineerId], references: [id])
+  assignedSquad    Squad?           @relation(fields: [assignedSquadId], references: [id])
+  assignedEngineers InitiativeAssignment[]
+  tags            InitiativeTag[]
+  dependencies    InitiativeDependency[] @relation("dependent")
+  dependents      InitiativeDependency[] @relation("dependency")
+  attachments     InitiativeAttachment[]
+  scheduledBlocks ScheduledBlock[]
+  clientAccess    ClientInitiativeAccess[]
+  sourceIdea      Idea?
+}
+
+enum InitiativeStatus {
+  DRAFT
+  PROPOSED
+  APPROVED
+  IN_PROGRESS
+  DONE
+  BLOCKED
+}
+
+enum VisibilityLevel {
+  INTERNAL
+  CLIENT_VISIBLE
+}
+
+model InitiativeTag {
+  id           String     @id @default(cuid())
+  initiativeId String
+  specialtyId  String
+
+  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  specialty    Specialty  @relation(fields: [specialtyId], references: [id], onDelete: Cascade)
+
+  @@unique([initiativeId, specialtyId])
+}
+
+model InitiativeAssignment {
+  id           String     @id @default(cuid())
+  initiativeId String
+  engineerId   String?    // Either engineerId or squadId must be set
+  squadId      String?    // Either engineerId or squadId must be set
+  isPrimary    Boolean    @default(false)  // Primary assignee is the main owner
+  createdAt    DateTime   @default(now())
+
+  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  engineer     Engineer?  @relation(fields: [engineerId], references: [id], onDelete: Cascade)
+  squad        Squad?     @relation(fields: [squadId], references: [id], onDelete: Cascade)
+
+  @@unique([initiativeId, engineerId])
+  @@unique([initiativeId, squadId])
+}
+
+model InitiativeDependency {
+  id            String     @id @default(cuid())
+  dependentId   String     // The initiative that depends on another
+  dependencyId  String     // The initiative being depended on
+
+  dependent     Initiative @relation("dependent", fields: [dependentId], references: [id], onDelete: Cascade)
+  dependency    Initiative @relation("dependency", fields: [dependencyId], references: [id], onDelete: Cascade)
+
+  @@unique([dependentId, dependencyId])
+}
+
+model InitiativeAttachment {
+  id           String     @id @default(cuid())
+  initiativeId String
+  filename     String
+  url          String     // Vercel Blob URL
+  mimeType     String?
+  size         Int?
+  createdAt    DateTime   @default(now())
+
+  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// Scheduling
+// ============================================
+
+model ScheduledBlock {
+  id             String     @id @default(cuid())
+  initiativeId   String
+  engineerId     String?    // Either engineerId or squadId must be set
+  squadId        String?    // Either engineerId or squadId must be set
+  startDate      DateTime
+  endDate        DateTime
+  hoursAllocated Int
+  isAtRisk       Boolean    @default(false)
+  riskReason     String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  engineer     Engineer?  @relation(fields: [engineerId], references: [id], onDelete: Cascade)
+  squad        Squad?     @relation(fields: [squadId], references: [id], onDelete: Cascade)
+
+  @@index([engineerId, startDate, endDate])
+  @@index([squadId, startDate, endDate])
+  @@index([initiativeId])
+}
+
+// ============================================
+// Client Access & Sharing
+// ============================================
+
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  createdAt DateTime @default(now())
+
+  access       ClientInitiativeAccess[]
+  shareLinks   ShareLink[]
+  ideaImpacts  IdeaClientImpact[]
+}
+
+model ClientInitiativeAccess {
+  id           String     @id @default(cuid())
+  clientId     String
+  initiativeId String
+
+  client       Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, initiativeId])
+}
+
+model ShareLink {
+  id        String         @id @default(cuid())
+  token     String         @unique @default(cuid())
+  viewType  ShareLinkType  @default(CLIENT)
+  clientId  String?
+  expiresAt DateTime?
+  createdAt DateTime       @default(now())
+
+  // Date range for the roadmap view
+  startDate DateTime?
+  endDate   DateTime?
+
+  // Executive view specific
+  executiveBrief      String?    @db.Text
+  briefGeneratedAt    DateTime?
+
+  client    Client?   @relation(fields: [clientId], references: [id])
+}
+
+enum ShareLinkType {
+  CLIENT
+  EXECUTIVE
+}
+
+// ============================================
+// Ideas Management
+// ============================================
+
+enum IdeaStatus {
+  NEW
+  NEEDS_CLARIFICATION
+  TRIAGED
+  ACCEPTED
+  REJECTED
+  PROMOTED
+  ARCHIVED
+}
+
+enum ClientImpactType {
+  ALL
+  LARGE_CHAINS
+  SMALL_CHAINS
+  SPECIFIC
+}
+
+model Idea {
+  id                String      @id @default(cuid())
+  title             String
+  problemStatement  String      @db.Text
+  whoIsImpacted     String?     // role/persona
+  whereItHappens    String?     // product area
+  frequency         String?     // how often
+  severity          String?     // qualitative impact
+  currentWorkaround String?     @db.Text
+  desiredOutcome    String?     @db.Text
+  evidence          String?     @db.Text  // links, quotes
+
+  status            IdeaStatus  @default(NEW)
+  priority          Int         @default(0)  // P0-P3 (0=unset, 1=P1, etc.)
+
+  // ICE Scoring
+  impactScore       Int?        // 1-10
+  confidenceScore   Int?        // 1-10
+  easeScore         Int?        // 1-10
+  iceScore          Float?      // computed: (impact * confidence * ease) / 10
+
+  // Ownership
+  submitterId       String
+  ownerId           String?     // triage owner
+
+  // Promotion link
+  promotedToId      String?     @unique
+
+  // Client Impact
+  clientImpactType  ClientImpactType?
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  submitter         User        @relation("IdeaSubmitter", fields: [submitterId], references: [id])
+  owner             User?       @relation("IdeaOwner", fields: [ownerId], references: [id])
+  promotedTo        Initiative? @relation(fields: [promotedToId], references: [id])
+  tags              IdeaTag[]
+  comments          IdeaComment[]
+  attachments       IdeaAttachment[]
+  impactedClients   IdeaClientImpact[]
+
+  @@index([status])
+  @@index([submitterId])
+  @@index([ownerId])
+}
+
+model IdeaTag {
+  id          String    @id @default(cuid())
+  ideaId      String
+  specialtyId String
+
+  idea        Idea      @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  specialty   Specialty @relation(fields: [specialtyId], references: [id])
+
+  @@unique([ideaId, specialtyId])
+}
+
+model IdeaComment {
+  id         String   @id @default(cuid())
+  ideaId     String
+  authorId   String
+  content    String   @db.Text
+  isInternal Boolean  @default(true)  // for future client visibility
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  idea       Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  author     User     @relation(fields: [authorId], references: [id])
+
+  @@index([ideaId])
+}
+
+model IdeaAttachment {
+  id        String   @id @default(cuid())
+  ideaId    String
+  filename  String
+  url       String
+  mimeType  String?
+  size      Int?
+  createdAt DateTime @default(now())
+
+  idea      Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+}
+
+model IdeaClientImpact {
+  id        String   @id @default(cuid())
+  ideaId    String
+  clientId  String
+
+  idea      Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([ideaId, clientId])
+}
+
+// ============================================
+// Audit Logging
+// ============================================
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  action       String   // CREATE, UPDATE, DELETE, ASSIGN, LOCK, SCHEDULE, etc.
+  entityType   String   // Initiative, Engineer, ScheduledBlock, etc.
+  entityId     String
+  userId       String?
+  details      Json?    // Before/after state, additional context
+  createdAt    DateTime @default(now())
+
+  user         User?    @relation(fields: [userId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
