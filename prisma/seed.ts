@@ -37,6 +37,7 @@ const domainSpecialties = [
   { name: "Integrations", color: "#0EA5E9", description: "Third-party integrations and APIs" },
   { name: "Activities", color: "#22C55E", description: "Activities and event programming" },
   { name: "Auth", color: "#DC2626", description: "Authentication and authorization systems" },
+  { name: "Permissions", color: "#B45309", description: "Permissions and access control" },
   { name: "Point of Sale", color: "#7C3AED", description: "Point of sale and register systems" },
   { name: "Accounting", color: "#059669", description: "Accounting and financial systems" },
   { name: "Box Office Reporting", color: "#0284C7", description: "Box office reporting and analytics" },
