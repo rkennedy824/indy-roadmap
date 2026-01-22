@@ -281,7 +281,7 @@ export function ClientRoadmapView({
                 className="flex border-x border-b hover:bg-muted/20 cursor-pointer group"
                 onClick={() => setSelectedInitiative(initiative)}
               >
-                <div className="w-[250px] shrink-0 p-3 border-r bg-background group-hover:bg-muted/20 sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
+                <div className="w-[250px] shrink-0 p-3 border-r bg-background group-hover:bg-muted sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
                   <div className="font-medium truncate">{initiative.title}</div>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {initiative.tags.slice(0, 2).map((tag) => (
