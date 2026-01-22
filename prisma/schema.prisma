@@ -209,6 +209,7 @@ enum InitiativeStatus {
   PROPOSED
   APPROVED
   IN_PROGRESS
+  DEV_COMPLETE
   DONE
   BLOCKED
 }

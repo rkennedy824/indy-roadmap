@@ -81,6 +81,7 @@ const STATUSES = [
   { value: "PROPOSED", label: "Proposed" },
   { value: "APPROVED", label: "Approved" },
   { value: "IN_PROGRESS", label: "In Progress" },
+  { value: "DEV_COMPLETE", label: "Dev Complete" },
   { value: "DONE", label: "Done" },
   { value: "BLOCKED", label: "Blocked" },
 ];
