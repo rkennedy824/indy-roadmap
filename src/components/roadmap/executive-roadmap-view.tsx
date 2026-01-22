@@ -443,7 +443,7 @@ export function ExecutiveRoadmapView({
                                       <span className="text-muted-foreground">{summary}</span>
                                     </p>
                                     {deliveryDate && (
-                                      <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+                                      <span className="inline-flex items-center gap-1.5 text-xs font-medium whitespace-nowrap shrink-0 bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                                         {deliveryLabel}: {format(deliveryDate, "MMM d")}
                                       </span>
                                     )}
