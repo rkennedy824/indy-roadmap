@@ -9,7 +9,7 @@ export const metadata = {
 };
 
 export default async function InitiativesPage() {
-  const [initiativesUnsorted, specialties, engineers] = await Promise.all([
+  const [initiativesUnsorted, specialties, engineers, clients] = await Promise.all([
     db.initiative.findMany({
       include: {
         tags: {
@@ -22,6 +22,9 @@ export default async function InitiativesPage() {
         dependencies: {
           include: { dependency: true },
         },
+        clientAccess: {
+          include: { client: true },
+        },
       },
     }),
     db.specialty.findMany({ orderBy: { name: "asc" } }),
@@ -29,6 +32,7 @@ export default async function InitiativesPage() {
       where: { isActive: true },
       orderBy: { name: "asc" },
     }),
+    db.client.findMany({ orderBy: { name: "asc" } }),
   ]);
 
   // Sort initiatives by earliest scheduled block start date
@@ -64,6 +68,7 @@ export default async function InitiativesPage() {
         initiatives={initiatives}
         specialties={specialties}
         engineers={engineers}
+        clients={clients}
       />
     </div>
   );

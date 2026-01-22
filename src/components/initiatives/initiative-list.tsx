@@ -9,6 +9,8 @@ import {
   Engineer,
   ScheduledBlock,
   InitiativeDependency,
+  Client,
+  ClientInitiativeAccess,
 } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -55,12 +57,14 @@ type InitiativeWithRelations = Initiative & {
   assignedEngineer: Engineer | null;
   scheduledBlocks: ScheduledBlock[];
   dependencies: (InitiativeDependency & { dependency: Initiative })[];
+  clientAccess: (ClientInitiativeAccess & { client: Client })[];
 };
 
 interface InitiativeListProps {
   initiatives: InitiativeWithRelations[];
   specialties: Specialty[];
   engineers: Engineer[];
+  clients: Client[];
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -76,11 +80,13 @@ export function InitiativeList({
   initiatives,
   specialties,
   engineers,
+  clients,
 }: InitiativeListProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [specialtyFilter, setSpecialtyFilter] = useState<string[]>([]);
   const [engineerFilter, setEngineerFilter] = useState<string[]>([]);
+  const [clientFilter, setClientFilter] = useState<string[]>([]);
 
   const filteredInitiatives = initiatives.filter((initiative) => {
     const matchesSearch =
@@ -98,7 +104,11 @@ export function InitiativeList({
       engineerFilter.length === 0 ||
       (initiative.assignedEngineerId && engineerFilter.includes(initiative.assignedEngineerId));
 
-    return matchesSearch && matchesStatus && matchesSpecialty && matchesEngineer;
+    const matchesClient =
+      clientFilter.length === 0 ||
+      initiative.clientAccess.some((ca) => clientFilter.includes(ca.clientId));
+
+    return matchesSearch && matchesStatus && matchesSpecialty && matchesEngineer && matchesClient;
   });
 
   const isAtRisk = (initiative: InitiativeWithRelations) => {
@@ -147,6 +157,13 @@ export function InitiativeList({
           selected={engineerFilter}
           onChange={setEngineerFilter}
           placeholder="All Engineers"
+          className="w-[150px]"
+        />
+        <MultiSelectFilter
+          options={clients.map((c) => ({ value: c.id, label: c.name }))}
+          selected={clientFilter}
+          onChange={setClientFilter}
+          placeholder="All Clients"
           className="w-[150px]"
         />
       </div>
