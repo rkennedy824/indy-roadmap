@@ -1,6 +1,10 @@
 import { db } from "@/lib/db";
 import { ClientRoadmapView } from "@/components/roadmap/client-roadmap-view";
 
+export const metadata = {
+  title: "Client Roadmap",
+};
+
 export default async function PublicClientRoadmapPage() {
   const initiatives = await db.initiative.findMany({
     where: {

@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 
+export const metadata = {
+  title: "Engineers",
+};
+
 export default async function EngineersPage() {
   const engineers = await db.engineer.findMany({
     include: {

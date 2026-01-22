@@ -1,6 +1,10 @@
 import { db } from "@/lib/db";
 import { SettingsView } from "@/components/settings/settings-view";
 
+export const metadata = {
+  title: "Settings",
+};
+
 export default async function SettingsPage() {
   const [specialties, shareLinks, clients, squads, engineers] = await Promise.all([
     db.specialty.findMany({ orderBy: { name: "asc" } }),

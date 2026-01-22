@@ -3,6 +3,10 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { UserList } from "@/components/users/user-list";
 
+export const metadata = {
+  title: "Users",
+};
+
 export default async function UsersPage() {
   const session = await auth();
 

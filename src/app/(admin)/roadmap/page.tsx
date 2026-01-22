@@ -1,6 +1,10 @@
 import { db } from "@/lib/db";
 import { RoadmapView } from "@/components/roadmap/roadmap-view";
 
+export const metadata = {
+  title: "Roadmap",
+};
+
 export default async function RoadmapPage() {
   const [engineers, initiatives, scheduledBlocks, specialties, clients, squads] = await Promise.all([
     db.engineer.findMany({

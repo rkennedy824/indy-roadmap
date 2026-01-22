@@ -1,6 +1,10 @@
 import { db } from "@/lib/db";
 import { ExecutiveRoadmapView } from "@/components/roadmap/executive-roadmap-view";
 
+export const metadata = {
+  title: "Executive Roadmap",
+};
+
 export default async function PublicExecutiveRoadmapPage() {
   const initiatives = await db.initiative.findMany({
     where: {

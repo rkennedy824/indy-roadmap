@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 
+export const metadata = {
+  title: "Initiatives",
+};
+
 export default async function InitiativesPage() {
   const [initiativesUnsorted, specialties, engineers] = await Promise.all([
     db.initiative.findMany({
