@@ -24,6 +24,22 @@ function addBusinessDays(date: Date, numDays: number): Date {
   return result;
 }
 
+// Calculate business days between two dates (excluding weekends)
+function getBusinessDaysBetween(startDate: Date, endDate: Date): number {
+  let count = 0;
+  const current = new Date(startDate);
+
+  while (current <= endDate) {
+    const dayOfWeek = current.getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      count++;
+    }
+    current.setDate(current.getDate() + 1);
+  }
+
+  return count;
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -280,6 +296,16 @@ export async function PUT(
               hoursAllocated: scheduleHours || 0,
             },
           });
+
+          // Auto-update effort estimate based on schedule duration
+          const businessDays = getBusinessDaysBetween(startDateParsed, endDateParsed);
+          const effortWeeks = Math.round((businessDays / 5) * 10) / 10; // Round to 1 decimal place
+          if (effortWeeks > 0) {
+            await db.initiative.update({
+              where: { id },
+              data: { effortEstimate: effortWeeks },
+            });
+          }
         }
       }
     }

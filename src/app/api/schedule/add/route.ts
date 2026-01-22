@@ -112,10 +112,21 @@ export async function POST(request: NextRequest) {
     });
 
     // Update the initiative's assigned engineer if it was unassigned
+    // Also update effort estimate based on schedule duration
+    const effortWeeks = Math.round((businessDays / 5) * 10) / 10; // Round to 1 decimal place
+    const updateData: { assignedEngineerId?: string; effortEstimate?: number } = {};
+
     if (!initiative.assignedEngineerId && targetEngineerId) {
+      updateData.assignedEngineerId = targetEngineerId;
+    }
+    if (effortWeeks > 0) {
+      updateData.effortEstimate = effortWeeks;
+    }
+
+    if (Object.keys(updateData).length > 0) {
       await db.initiative.update({
         where: { id: initiativeId },
-        data: { assignedEngineerId: targetEngineerId },
+        data: updateData,
       });
     }
 

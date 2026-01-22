@@ -253,11 +253,27 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // If engineer changed, also update the initiative's assigned engineer
+      // Update the initiative - engineer if changed, and effort estimate based on new dates
+      const mainBlockUpdate = updates.find((u) => u.id === blockId);
+      const initiativeUpdateData: { assignedEngineerId?: string; effortEstimate?: number } = {};
+
       if (engineerChanged) {
+        initiativeUpdateData.assignedEngineerId = targetEngineerId;
+      }
+
+      // Update effort estimate based on the main block's new dates
+      if (mainBlockUpdate) {
+        const businessDays = businessDaysBetween(mainBlockUpdate.startDate, mainBlockUpdate.endDate);
+        const effortWeeks = Math.round((businessDays / 5) * 10) / 10;
+        if (effortWeeks > 0) {
+          initiativeUpdateData.effortEstimate = effortWeeks;
+        }
+      }
+
+      if (Object.keys(initiativeUpdateData).length > 0) {
         await tx.initiative.update({
           where: { id: block.initiativeId },
-          data: { assignedEngineerId: targetEngineerId },
+          data: initiativeUpdateData,
         });
       }
     });

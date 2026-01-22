@@ -10,6 +10,22 @@ function parseLocalDate(dateStr: string | null): Date | null {
   return new Date(year, month - 1, day, 12, 0, 0);
 }
 
+// Calculate business days between two dates (excluding weekends)
+function getBusinessDaysBetween(startDate: Date, endDate: Date): number {
+  let count = 0;
+  const current = new Date(startDate);
+
+  while (current <= endDate) {
+    const dayOfWeek = current.getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      count++;
+    }
+    current.setDate(current.getDate() + 1);
+  }
+
+  return count;
+}
+
 export async function GET() {
   try {
     const initiatives = await db.initiative.findMany({
@@ -159,6 +175,16 @@ export async function POST(request: NextRequest) {
             hoursAllocated: scheduleHours || 0,
           },
         });
+
+        // Auto-update effort estimate based on schedule duration
+        const businessDays = getBusinessDaysBetween(startDateParsed, endDateParsed);
+        const effortWeeks = Math.round((businessDays / 5) * 10) / 10; // Round to 1 decimal place
+        if (effortWeeks > 0) {
+          await db.initiative.update({
+            where: { id: initiative.id },
+            data: { effortEstimate: effortWeeks },
+          });
+        }
       }
     }
 
