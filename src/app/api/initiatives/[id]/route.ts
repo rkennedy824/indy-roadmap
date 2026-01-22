@@ -282,7 +282,10 @@ export async function PUT(
 
       // Create new scheduled block if we have the required data
       const engineerId = initiativeData.assignedEngineerId || existing.assignedEngineerId;
-      if (scheduleStart && scheduleEnd && engineerId) {
+      const squadId = assignedSquadId !== undefined ? assignedSquadId : existing.assignedSquadId;
+      const hasAssignee = engineerId || squadId;
+
+      if (scheduleStart && scheduleEnd && hasAssignee) {
         const startDateParsed = parseLocalDate(scheduleStart);
         const endDateParsed = parseLocalDate(scheduleEnd);
 
@@ -290,7 +293,8 @@ export async function PUT(
           await db.scheduledBlock.create({
             data: {
               initiativeId: id,
-              engineerId: engineerId,
+              engineerId: engineerId || null,
+              squadId: !engineerId ? squadId : null,
               startDate: startDateParsed,
               endDate: endDateParsed,
               hoursAllocated: scheduleHours || 0,

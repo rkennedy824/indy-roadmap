@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { initiativeId, startDate, endDate, engineerId } = await request.json();
+    const { initiativeId, startDate, endDate, engineerId, squadId } = await request.json();
 
     if (!initiativeId || !startDate) {
       return NextResponse.json(
@@ -76,23 +76,37 @@ export async function POST(request: NextRequest) {
       end = parseLocalDate(endDate);
     }
 
-    // Determine the engineer - use provided, fall back to assigned, or require one
+    // Determine the engineer or squad - use provided, fall back to assigned
     let targetEngineerId = engineerId || initiative.assignedEngineerId;
+    let targetSquadId = squadId || (!targetEngineerId ? initiative.assignedSquadId : null);
 
-    if (!targetEngineerId) {
+    if (!targetEngineerId && !targetSquadId) {
       return NextResponse.json(
-        { error: "No engineer specified. Please select from an engineer's row on the roadmap, or assign an engineer to the initiative first." },
+        { error: "No engineer or squad specified. Please select from an engineer's or squad's row on the roadmap, or assign one to the initiative first." },
         { status: 400 }
       );
     }
 
-    // Verify engineer exists
-    const engineer = await db.engineer.findUnique({
-      where: { id: targetEngineerId },
-    });
+    // Verify engineer exists if specified
+    if (targetEngineerId) {
+      const engineer = await db.engineer.findUnique({
+        where: { id: targetEngineerId },
+      });
 
-    if (!engineer) {
-      return NextResponse.json({ error: "Engineer not found" }, { status: 404 });
+      if (!engineer) {
+        return NextResponse.json({ error: "Engineer not found" }, { status: 404 });
+      }
+    }
+
+    // Verify squad exists if specified
+    if (targetSquadId && !targetEngineerId) {
+      const squad = await db.squad.findUnique({
+        where: { id: targetSquadId },
+      });
+
+      if (!squad) {
+        return NextResponse.json({ error: "Squad not found" }, { status: 404 });
+      }
     }
 
     // Calculate hours based on business days (assuming 8 hours per day)
@@ -103,7 +117,8 @@ export async function POST(request: NextRequest) {
     const scheduledBlock = await db.scheduledBlock.create({
       data: {
         initiativeId,
-        engineerId: targetEngineerId,
+        engineerId: targetEngineerId || null,
+        squadId: !targetEngineerId ? targetSquadId : null,
         startDate: start,
         endDate: end,
         hoursAllocated,
@@ -111,13 +126,16 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Update the initiative's assigned engineer if it was unassigned
+    // Update the initiative's assigned engineer/squad if it was unassigned
     // Also update effort estimate based on schedule duration
     const effortWeeks = Math.round((businessDays / 5) * 10) / 10; // Round to 1 decimal place
-    const updateData: { assignedEngineerId?: string; effortEstimate?: number } = {};
+    const updateData: { assignedEngineerId?: string; assignedSquadId?: string; effortEstimate?: number } = {};
 
     if (!initiative.assignedEngineerId && targetEngineerId) {
       updateData.assignedEngineerId = targetEngineerId;
+    }
+    if (!initiative.assignedSquadId && targetSquadId && !targetEngineerId) {
+      updateData.assignedSquadId = targetSquadId;
     }
     if (effortWeeks > 0) {
       updateData.effortEstimate = effortWeeks;

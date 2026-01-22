@@ -160,8 +160,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Create scheduled block if schedule data provided and engineer assigned
-    if (scheduleStart && scheduleEnd && initiativeData.assignedEngineerId) {
+    // Create scheduled block if schedule data provided and engineer or squad assigned
+    const hasAssignee = initiativeData.assignedEngineerId || assignedSquadId;
+    if (scheduleStart && scheduleEnd && hasAssignee) {
       const startDateParsed = parseLocalDate(scheduleStart);
       const endDateParsed = parseLocalDate(scheduleEnd);
 
@@ -169,7 +170,8 @@ export async function POST(request: NextRequest) {
         await db.scheduledBlock.create({
           data: {
             initiativeId: initiative.id,
-            engineerId: initiativeData.assignedEngineerId,
+            engineerId: initiativeData.assignedEngineerId || null,
+            squadId: !initiativeData.assignedEngineerId ? assignedSquadId : null,
             startDate: startDateParsed,
             endDate: endDateParsed,
             hoursAllocated: scheduleHours || 0,
