@@ -422,6 +422,7 @@ export function ExecutiveRoadmapView({
               onChange={setClientFilter}
               placeholder="All Clients"
               className="w-[180px]"
+              searchable
             />
           </div>
           <DateRangeSelector

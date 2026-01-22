@@ -802,6 +802,7 @@ export function RoadmapView({
             onChange={setClientFilter}
             placeholder="All Clients"
             className="w-[150px]"
+            searchable
           />
           <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as typeof viewMode)}>
             <TabsList>
