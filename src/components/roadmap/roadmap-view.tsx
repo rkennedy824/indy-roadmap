@@ -37,6 +37,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
+  CheckCircle2,
 } from "lucide-react";
 import {
   format,
@@ -1035,6 +1036,7 @@ export function RoadmapView({
                         const isDragging = blockDragState?.block.id === block.id;
                         const dragOffset = getBlockDragOffset(block.id);
                         const isLocked = block.initiative.lockDates;
+                        const isDone = block.initiative.status === "DONE";
 
                         return (
                           <div
@@ -1042,8 +1044,10 @@ export function RoadmapView({
                             className={`absolute rounded-md text-white text-xs font-medium px-2 truncate flex items-center gap-1 select-none ${
                               block.isAtRisk ? "ring-2 ring-destructive" : ""
                             } ${isDragging ? "opacity-70 ring-2 ring-primary z-30" : "hover:opacity-90"} ${
-                              isLocked ? "cursor-not-allowed" : "cursor-grab"
-                            } ${isDragging ? "cursor-grabbing" : ""}`}
+                              isLocked || isDone ? "cursor-not-allowed" : "cursor-grab"
+                            } ${isDragging ? "cursor-grabbing" : ""} ${
+                              isDone ? "opacity-60" : ""
+                            }`}
                             style={{
                               left: style.left + dragOffset,
                               width: style.width,
@@ -1053,6 +1057,7 @@ export function RoadmapView({
                               transition: isDragging ? "none" : "opacity 0.15s",
                             }}
                             onMouseDown={(e) => {
+                              if (isDone) return; // Don't allow dragging completed blocks
                               // Find the day index for drag start
                               const blockStart = new Date(block.startDate);
                               const startIndex = days.findIndex(day => {
@@ -1068,9 +1073,12 @@ export function RoadmapView({
                                 setSelectedInitiativeId(block.initiativeId);
                               }
                             }}
-                            title={isLocked ? "This block is locked" : "Drag to reschedule"}
+                            title={isDone ? "Completed" : isLocked ? "This block is locked" : "Drag to reschedule"}
                           >
-                            {isLocked && (
+                            {isDone && (
+                              <CheckCircle2 className="h-3 w-3 shrink-0" />
+                            )}
+                            {!isDone && isLocked && (
                               <Lock className="h-3 w-3 shrink-0" />
                             )}
                             {block.isAtRisk && (
@@ -1185,13 +1193,16 @@ export function RoadmapView({
                         if (!style) return null;
                         const tagColor = getTagColor(block);
                         const isLocked = block.initiative.lockDates;
+                        const isDone = block.initiative.status === "DONE";
                         const lane = lanes.get(block.id) || 0;
                         const topPosition = ROW_PADDING + lane * (BLOCK_HEIGHT + BLOCK_GAP);
 
                         return (
                           <div
                             key={block.id}
-                            className="absolute rounded-md px-2 text-xs font-medium text-white truncate cursor-pointer hover:opacity-90 flex items-center gap-1"
+                            className={`absolute rounded-md px-2 text-xs font-medium text-white truncate cursor-pointer hover:opacity-90 flex items-center gap-1 ${
+                              isDone ? "opacity-60" : ""
+                            }`}
                             style={{
                               left: style.left,
                               width: style.width,
@@ -1200,9 +1211,10 @@ export function RoadmapView({
                               backgroundColor: tagColor,
                             }}
                             onClick={() => setSelectedInitiativeId(block.initiativeId)}
-                            title={block.initiative.title}
+                            title={isDone ? `${block.initiative.title} (Completed)` : block.initiative.title}
                           >
-                            {isLocked && <Lock className="h-3 w-3 shrink-0" />}
+                            {isDone && <CheckCircle2 className="h-3 w-3 shrink-0" />}
+                            {!isDone && isLocked && <Lock className="h-3 w-3 shrink-0" />}
                             {block.isAtRisk && <AlertTriangle className="h-3 w-3 shrink-0" />}
                             <span className="truncate">{block.initiative.title}</span>
                           </div>
@@ -1216,15 +1228,18 @@ export function RoadmapView({
 
             {viewMode === "initiatives" && (
               // Initiative Swimlanes
-              filteredInitiatives.map((initiative) => (
-                <div key={initiative.id} className="flex border-b hover:bg-muted/30">
+              filteredInitiatives.map((initiative) => {
+                const isDone = initiative.status === "DONE";
+                return (
+                <div key={initiative.id} className={`flex border-b hover:bg-muted/30 ${isDone ? "opacity-70" : ""}`}>
                   <div className="w-[200px] shrink-0 p-2 border-r sticky left-0 z-10 bg-card">
                     <Link
                       href={`/initiatives/${initiative.id}`}
                       className="font-medium hover:underline flex items-center gap-1"
                     >
-                      {initiative.lockAssignment && <Lock className="h-3 w-3" />}
-                      <span className="truncate">{initiative.title}</span>
+                      {isDone && <CheckCircle2 className="h-3 w-3 text-green-600 shrink-0" />}
+                      {!isDone && initiative.lockAssignment && <Lock className="h-3 w-3 shrink-0" />}
+                      <span className={`truncate ${isDone ? "text-muted-foreground" : ""}`}>{initiative.title}</span>
                     </Link>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {initiative.tags.slice(0, 2).map((tag) => (
@@ -1300,6 +1315,7 @@ export function RoadmapView({
                       const isDragging = blockDragState?.block.id === block.id;
                       const dragOffset = getBlockDragOffset(block.id);
                       const isLocked = block.initiative.lockDates;
+                      const isBlockDone = block.initiative.status === "DONE";
 
                       return (
                         <div
@@ -1307,8 +1323,10 @@ export function RoadmapView({
                           className={`absolute rounded-md text-white text-xs font-medium px-2 truncate flex items-center gap-1 select-none ${
                             block.isAtRisk ? "ring-2 ring-destructive" : ""
                           } ${isDragging ? "opacity-70 ring-2 ring-primary z-30" : "hover:opacity-90"} ${
-                            isLocked ? "cursor-not-allowed" : "cursor-grab"
-                          } ${isDragging ? "cursor-grabbing" : ""}`}
+                            isLocked || isBlockDone ? "cursor-not-allowed" : "cursor-grab"
+                          } ${isDragging ? "cursor-grabbing" : ""} ${
+                            isBlockDone ? "opacity-60" : ""
+                          }`}
                           style={{
                             left: style.left + dragOffset,
                             width: style.width,
@@ -1318,6 +1336,7 @@ export function RoadmapView({
                             transition: isDragging ? "none" : "opacity 0.15s",
                           }}
                           onMouseDown={(e) => {
+                            if (isBlockDone) return; // Don't allow dragging completed blocks
                             const blockStart = new Date(block.startDate);
                             const startIndex = days.findIndex(day => {
                               const dayTime = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
@@ -1332,9 +1351,12 @@ export function RoadmapView({
                               setSelectedInitiativeId(block.initiativeId);
                             }
                           }}
-                          title={isLocked ? "This block is locked" : "Drag to reschedule"}
+                          title={isBlockDone ? "Completed" : isLocked ? "This block is locked" : "Drag to reschedule"}
                         >
-                          {isLocked && (
+                          {isBlockDone && (
+                            <CheckCircle2 className="h-3 w-3 shrink-0" />
+                          )}
+                          {!isBlockDone && isLocked && (
                             <Lock className="h-3 w-3 shrink-0" />
                           )}
                           {block.isAtRisk && (
@@ -1346,7 +1368,8 @@ export function RoadmapView({
                     })}
                   </div>
                 </div>
-              ))
+                );
+              })
             )}
             </div>
           </div>

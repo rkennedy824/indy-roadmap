@@ -19,7 +19,7 @@ export default async function RoadmapPage() {
     }),
     db.initiative.findMany({
       where: {
-        status: { notIn: ["DONE"] },
+        // Include all statuses including DONE
       },
       include: {
         tags: {
@@ -42,7 +42,7 @@ export default async function RoadmapPage() {
     }),
     db.scheduledBlock.findMany({
       where: {
-        endDate: { gte: new Date() },
+        // Include all blocks, let the view filter by visible date range
       },
       include: {
         initiative: {
