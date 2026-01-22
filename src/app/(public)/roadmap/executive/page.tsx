@@ -1,18 +1,12 @@
-import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { auth } from "@/lib/auth";
 import { ExecutiveRoadmapView } from "@/components/roadmap/executive-roadmap-view";
+import { PasswordGate } from "@/components/auth/password-gate";
 
 export const metadata = {
   title: "Executive Roadmap",
 };
 
 export default async function PublicExecutiveRoadmapPage() {
-  // Require authentication for executive view
-  const session = await auth();
-  if (!session) {
-    redirect("/login?callbackUrl=/roadmap/executive");
-  }
   const initiatives = await db.initiative.findMany({
     where: {
       status: { notIn: ["DRAFT"] },
@@ -46,10 +40,16 @@ export default async function PublicExecutiveRoadmapPage() {
   });
 
   return (
-    <ExecutiveRoadmapView
-      initiatives={initiatives}
-      specialties={specialties}
-      unavailability={unavailability}
-    />
+    <PasswordGate
+      storageKey="executive-access"
+      title="Executive Roadmap"
+      description="Enter the password to view the executive roadmap."
+    >
+      <ExecutiveRoadmapView
+        initiatives={initiatives}
+        specialties={specialties}
+        unavailability={unavailability}
+      />
+    </PasswordGate>
   );
 }
