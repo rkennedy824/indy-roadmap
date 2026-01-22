@@ -463,12 +463,12 @@ export function IdeaDetail({ idea, users, specialties, clients }: IdeaDetailProp
               </div>
               <div>
                 <Label className="text-sm text-muted-foreground">Owner</Label>
-                <Select value={ownerId} onValueChange={handleOwnerChange}>
+                <Select value={ownerId || "_unassigned"} onValueChange={(v) => handleOwnerChange(v === "_unassigned" ? "" : v)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Assign owner..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Unassigned</SelectItem>
+                    <SelectItem value="_unassigned">Unassigned</SelectItem>
                     {users.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.name || user.email}
