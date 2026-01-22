@@ -44,6 +44,9 @@ import {
   Calendar,
   Rocket,
   User,
+  FileText,
+  CheckCircle2,
+  Circle,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -156,7 +159,7 @@ export function InitiativeList({
                 <TableHead className="w-[35%]">Initiative</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Assignee</TableHead>
-                <TableHead>Beta Release</TableHead>
+                <TableHead>Docs</TableHead>
                 <TableHead>Production Release</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
@@ -214,16 +217,54 @@ export function InitiativeList({
                     )}
                   </TableCell>
                   <TableCell>
-                    {initiative.betaTargetDate ? (
-                      <div className="flex items-center gap-2">
-                        <Rocket className="h-4 w-4 text-blue-500" />
-                        <span>
-                          {format(new Date(initiative.betaTargetDate), "MMM d, yyyy")}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">Not set</span>
-                    )}
+                    {(() => {
+                      const hasPrd = !!initiative.prdContent;
+                      const hasExec = !!initiative.executiveOverview;
+                      const hasClient = !!initiative.clientOverview;
+                      const count = [hasPrd, hasExec, hasClient].filter(Boolean).length;
+
+                      if (count === 0) {
+                        return <span className="text-muted-foreground text-sm">None</span>;
+                      }
+
+                      return (
+                        <div className="flex items-center gap-1.5">
+                          <div
+                            className={`flex items-center gap-0.5 ${hasPrd ? "text-foreground" : "text-muted-foreground/40"}`}
+                            title={hasPrd ? "PRD available" : "No PRD"}
+                          >
+                            {hasPrd ? (
+                              <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                            ) : (
+                              <Circle className="h-3.5 w-3.5" />
+                            )}
+                            <span className="text-xs">PRD</span>
+                          </div>
+                          <div
+                            className={`flex items-center gap-0.5 ${hasExec ? "text-foreground" : "text-muted-foreground/40"}`}
+                            title={hasExec ? "Executive summary available" : "No executive summary"}
+                          >
+                            {hasExec ? (
+                              <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                            ) : (
+                              <Circle className="h-3.5 w-3.5" />
+                            )}
+                            <span className="text-xs">Exec</span>
+                          </div>
+                          <div
+                            className={`flex items-center gap-0.5 ${hasClient ? "text-foreground" : "text-muted-foreground/40"}`}
+                            title={hasClient ? "Client summary available" : "No client summary"}
+                          >
+                            {hasClient ? (
+                              <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                            ) : (
+                              <Circle className="h-3.5 w-3.5" />
+                            )}
+                            <span className="text-xs">Client</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell>
                     {initiative.masterTargetDate ? (
