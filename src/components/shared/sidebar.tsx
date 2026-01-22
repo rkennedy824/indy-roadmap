@@ -10,6 +10,7 @@ import {
   Lightbulb,
   Settings,
   LogOut,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOut } from "next-auth/react";
@@ -19,6 +20,7 @@ const navigation = [
   { name: "Engineers", href: "/engineers", icon: Users },
   { name: "Initiatives", href: "/initiatives", icon: Target },
   { name: "Ideas", href: "/ideas", icon: Lightbulb },
+  { name: "Users", href: "/users", icon: Shield },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
