@@ -176,7 +176,7 @@ No headers, no bullet points, no sections. Just a short paragraph that an exec c
 
 ---
 
-Write a brief client-facing summary with exactly two sections:
+Write a brief client-facing summary with exactly two sections, separated by a blank line:
 
 **What We're Building**
 2-3 sentences describing what this feature/initiative does in clear, non-technical language.
@@ -186,6 +186,7 @@ Write a brief client-facing summary with exactly two sections:
 
 Important:
 - Keep it SHORT - no more than 6 sentences total
+- MUST include a blank line between the two sections for readability
 - Do NOT mention: internal costs, team allocations, technical debt, timelines, or internal challenges
 - Do NOT include any other sections like "Timeline" or "What to Expect"
 - Just these two sections, nothing else`;
@@ -248,7 +249,7 @@ No headers, no bullet points. Just a short paragraph an exec can read in 15 seco
 
 ---
 
-Write a brief client-facing summary with exactly two sections:
+Write a brief client-facing summary with exactly two sections, separated by a blank line:
 
 **What We're Building**
 2-3 sentences describing what this feature/initiative does in clear, non-technical language.
@@ -258,6 +259,7 @@ Write a brief client-facing summary with exactly two sections:
 
 Important:
 - Keep it SHORT - no more than 6 sentences total
+- MUST include a blank line between the two sections for readability
 - Do NOT mention: internal costs, team allocations, technical debt, timelines, or internal challenges
 - Do NOT include any other sections
 - Just these two sections, nothing else`;
