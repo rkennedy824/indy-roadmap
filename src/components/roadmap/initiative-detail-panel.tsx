@@ -49,7 +49,7 @@ import {
   Rocket,
   Trash2,
   ChevronDown,
-  ChevronUp,
+  ChevronRight,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
@@ -88,7 +88,6 @@ function ExpandableSection({
   title,
   content,
   icon,
-  maxLines = 3,
   onEdit,
   isEditing,
   editValue,
@@ -99,7 +98,6 @@ function ExpandableSection({
   title: string;
   content: string | null | undefined;
   icon?: React.ReactNode;
-  maxLines?: number;
   onEdit?: () => void;
   isEditing?: boolean;
   editValue?: string;
@@ -109,8 +107,6 @@ function ExpandableSection({
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const hasContent = content && content.trim().length > 0;
-  const lineHeight = 20; // approximate line height in pixels
-  const maxHeight = lineHeight * maxLines;
 
   if (isEditing) {
     return (
@@ -138,49 +134,41 @@ function ExpandableSection({
   }
 
   return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between">
-        <Label className="text-xs text-muted-foreground flex items-center gap-1">
-          {icon}
-          {title}
-        </Label>
-        {hasContent && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-5 px-1 text-xs"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            {isExpanded ? (
-              <>
-                <ChevronUp className="h-3 w-3 mr-1" />
-                Less
-              </>
-            ) : (
-              <>
-                <ChevronDown className="h-3 w-3 mr-1" />
-                More
-              </>
-            )}
-          </Button>
-        )}
-      </div>
-      <div
-        className={cn(
-          "text-sm cursor-pointer hover:bg-muted p-2 rounded-md transition-colors",
-          !isExpanded && hasContent && "overflow-hidden"
-        )}
-        style={!isExpanded && hasContent ? { maxHeight: `${maxHeight}px` } : undefined}
-        onClick={onEdit}
+    <div>
+      <button
+        className="w-full flex items-center justify-between py-2 hover:bg-muted/50 rounded-md px-2 transition-colors"
+        onClick={() => setIsExpanded(!isExpanded)}
       >
+        <div className="flex items-center gap-2">
+          {isExpanded ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          )}
+          <span className="text-sm font-medium">{title}</span>
+          {icon}
+        </div>
         {hasContent ? (
-          <div className={cn(!isExpanded && "line-clamp-3")}>
-            <pre className="whitespace-pre-wrap font-sans text-sm">{content}</pre>
-          </div>
+          <Badge variant="secondary" className="text-xs">
+            Has content
+          </Badge>
         ) : (
-          <span className="text-muted-foreground italic">Click to add...</span>
+          <span className="text-xs text-muted-foreground italic">Empty</span>
         )}
-      </div>
+      </button>
+
+      {isExpanded && (
+        <div
+          className="text-sm cursor-pointer hover:bg-muted p-3 rounded-md transition-colors ml-6 mt-1 border-l-2 border-muted"
+          onClick={onEdit}
+        >
+          {hasContent ? (
+            <pre className="whitespace-pre-wrap font-sans text-sm">{content}</pre>
+          ) : (
+            <span className="text-muted-foreground italic">Click to add content...</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
