@@ -69,6 +69,8 @@ import {
   ExternalLink,
   User as UserIcon,
   Pencil,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -100,7 +102,7 @@ interface InitiativeDetailViewProps {
   specialties: Specialty[];
   engineers: Engineer[];
   squads: SquadWithMembers[];
-  allInitiatives: Initiative[];
+  allInitiatives: { id: string; title: string }[];
   clients: Client[];
 }
 
@@ -452,17 +454,61 @@ export function InitiativeDetailView({
     }
   };
 
+  // Calculate prev/next initiatives for navigation
+  const currentIndex = allInitiatives.findIndex((i) => i.id === initiative.id);
+  const prevInitiative = currentIndex > 0 ? allInitiatives[currentIndex - 1] : null;
+  const nextInitiative = currentIndex < allInitiatives.length - 1 ? allInitiatives[currentIndex + 1] : null;
+
   return (
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <Link
-          href="/initiatives"
-          className="flex items-center text-sm text-muted-foreground hover:text-foreground mb-4"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Initiatives
-        </Link>
+        <div className="flex items-center justify-between mb-4">
+          <Link
+            href="/initiatives"
+            className="flex items-center text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Initiatives
+          </Link>
+
+          {/* Prev/Next Navigation */}
+          <div className="flex items-center gap-1">
+            {prevInitiative ? (
+              <Link
+                href={`/initiatives/${prevInitiative.id}`}
+                className="flex items-center gap-1 px-2 py-1 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                title={prevInitiative.title}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="hidden sm:inline max-w-[150px] truncate">{prevInitiative.title}</span>
+                <span className="sm:hidden">Prev</span>
+              </Link>
+            ) : (
+              <span className="px-2 py-1 text-sm text-muted-foreground/40">
+                <ChevronLeft className="h-4 w-4" />
+              </span>
+            )}
+            <span className="text-xs text-muted-foreground px-2">
+              {currentIndex + 1} / {allInitiatives.length}
+            </span>
+            {nextInitiative ? (
+              <Link
+                href={`/initiatives/${nextInitiative.id}`}
+                className="flex items-center gap-1 px-2 py-1 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                title={nextInitiative.title}
+              >
+                <span className="hidden sm:inline max-w-[150px] truncate">{nextInitiative.title}</span>
+                <span className="sm:hidden">Next</span>
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+            ) : (
+              <span className="px-2 py-1 text-sm text-muted-foreground/40">
+                <ChevronRight className="h-4 w-4" />
+              </span>
+            )}
+          </div>
+        </div>
 
         {/* Title and Actions Row */}
         <div className="flex items-start justify-between gap-4">

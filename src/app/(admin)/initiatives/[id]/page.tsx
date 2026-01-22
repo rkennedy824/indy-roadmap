@@ -55,8 +55,9 @@ export default async function InitiativeDetailPage({
       orderBy: { name: "asc" },
     }),
     db.initiative.findMany({
-      where: {
-        status: { notIn: ["DONE"] },
+      select: {
+        id: true,
+        title: true,
       },
       orderBy: { title: "asc" },
     }),
