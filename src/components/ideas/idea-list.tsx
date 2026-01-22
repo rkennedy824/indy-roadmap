@@ -98,6 +98,7 @@ export function IdeaList({ ideas, specialties, users, clients }: IdeaListProps) 
   const [specialtyFilter, setSpecialtyFilter] = useState<string[]>([]);
   const [submitterFilter, setSubmitterFilter] = useState<string[]>([]);
   const [ownerFilter, setOwnerFilter] = useState<string[]>([]);
+  const [clientFilter, setClientFilter] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<"ice" | "created" | "priority">("ice");
 
   const filteredIdeas = useMemo(() => {
@@ -121,12 +122,17 @@ export function IdeaList({ ideas, specialties, users, clients }: IdeaListProps) 
         ownerFilter.length === 0 ||
         (idea.ownerId && ownerFilter.includes(idea.ownerId));
 
+      const matchesClient =
+        clientFilter.length === 0 ||
+        idea.impactedClients.some((ic) => clientFilter.includes(ic.clientId));
+
       return (
         matchesSearch &&
         matchesStatus &&
         matchesSpecialty &&
         matchesSubmitter &&
-        matchesOwner
+        matchesOwner &&
+        matchesClient
       );
     });
 
@@ -145,7 +151,7 @@ export function IdeaList({ ideas, specialties, users, clients }: IdeaListProps) 
     });
 
     return filtered;
-  }, [ideas, search, statusFilter, specialtyFilter, submitterFilter, ownerFilter, sortBy]);
+  }, [ideas, search, statusFilter, specialtyFilter, submitterFilter, ownerFilter, clientFilter, sortBy]);
 
   return (
     <div className="space-y-4">
@@ -199,6 +205,17 @@ export function IdeaList({ ideas, specialties, users, clients }: IdeaListProps) 
           onChange={setOwnerFilter}
           placeholder="All Owners"
           className="w-[150px]"
+        />
+        <MultiSelectFilter
+          options={clients.map((c) => ({
+            value: c.id,
+            label: c.name,
+          }))}
+          selected={clientFilter}
+          onChange={setClientFilter}
+          placeholder="All Clients"
+          className="w-[150px]"
+          searchable
         />
       </div>
 
