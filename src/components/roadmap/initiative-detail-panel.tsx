@@ -50,6 +50,8 @@ import {
   Trash2,
   ChevronDown,
   ChevronRight,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
@@ -81,6 +83,11 @@ const STATUSES = [
   { value: "IN_PROGRESS", label: "In Progress" },
   { value: "DONE", label: "Done" },
   { value: "BLOCKED", label: "Blocked" },
+];
+
+const VISIBILITY_LEVELS = [
+  { value: "INTERNAL", label: "Internal", icon: EyeOff },
+  { value: "CLIENT_VISIBLE", label: "Client Visible", icon: Eye },
 ];
 
 // Expandable text section component
@@ -859,25 +866,58 @@ export function InitiativeDetailPanel({
 
               <Separator />
 
-              {/* Locks - Compact */}
-              <div className="flex gap-4">
-                <div className="flex items-center gap-2">
-                  <Lock className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-xs">Lock Assignment</span>
-                  <Switch
-                    checked={initiative.lockAssignment}
-                    onCheckedChange={(checked) => handleSave("lockAssignment", checked)}
-                    className="scale-75"
-                  />
+              {/* Visibility & Locks */}
+              <div className="space-y-3">
+                {/* Visibility */}
+                <div className="flex items-center gap-3">
+                  <Label className="text-xs text-muted-foreground flex items-center gap-1 min-w-[60px]">
+                    {initiative.visibilityLevel === "CLIENT_VISIBLE" ? (
+                      <Eye className="h-3 w-3" />
+                    ) : (
+                      <EyeOff className="h-3 w-3" />
+                    )}
+                    Visibility
+                  </Label>
+                  <Select
+                    value={initiative.visibilityLevel || "INTERNAL"}
+                    onValueChange={(value) => handleSave("visibilityLevel", value)}
+                  >
+                    <SelectTrigger className="h-7 text-xs flex-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {VISIBILITY_LEVELS.map((v) => (
+                        <SelectItem key={v.value} value={v.value}>
+                          <div className="flex items-center gap-2">
+                            <v.icon className="h-3 w-3" />
+                            {v.label}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Lock className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-xs">Lock Dates</span>
-                  <Switch
-                    checked={initiative.lockDates}
-                    onCheckedChange={(checked) => handleSave("lockDates", checked)}
-                    className="scale-75"
-                  />
+
+                {/* Locks - Compact */}
+                <div className="flex gap-4">
+                  <div className="flex items-center gap-2">
+                    <Lock className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-xs">Lock Assignment</span>
+                    <Switch
+                      checked={initiative.lockAssignment}
+                      onCheckedChange={(checked) => handleSave("lockAssignment", checked)}
+                      className="scale-75"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Lock className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-xs">Lock Dates</span>
+                    <Switch
+                      checked={initiative.lockDates}
+                      onCheckedChange={(checked) => handleSave("lockDates", checked)}
+                      className="scale-75"
+                    />
+                  </div>
                 </div>
               </div>
 
