@@ -373,7 +373,7 @@ export function ClientRoadmapView({
         open={!!selectedInitiative}
         onOpenChange={() => setSelectedInitiative(null)}
       >
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto p-0">
+        <SheetContent className="w-full sm:max-w-xl overflow-y-auto p-0">
           {selectedInitiative && (
             <>
               {/* Header with gradient background */}
