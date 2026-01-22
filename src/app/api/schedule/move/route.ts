@@ -64,7 +64,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { blockId, newStartDate, newEndDate, newEngineerId } = await request.json();
+    const { blockId, newStartDate, newEndDate, newEngineerId, conflictResolution } = await request.json();
+    // conflictResolution: "check" | "stack" | "push" (default: "push")
 
     if (!blockId || !newStartDate || !newEndDate) {
       return NextResponse.json(
@@ -121,6 +122,19 @@ export async function POST(request: NextRequest) {
       rangesOverlap(newStart, newEnd, new Date(b.startDate), new Date(b.endDate))
     );
 
+    // If just checking for conflicts, return them without making changes
+    if (conflictResolution === "check") {
+      return NextResponse.json({
+        hasConflicts: conflictingBlocks.length > 0,
+        conflictingBlocks: conflictingBlocks.map((b) => ({
+          id: b.id,
+          initiative: { title: b.initiative.title },
+          startDate: b.startDate,
+          endDate: b.endDate,
+        })),
+      });
+    }
+
     // Calculate how much to bump conflicting blocks
     // We'll push them forward by the overlap amount
     const updates: { id: string; startDate: Date; endDate: Date }[] = [];
@@ -132,86 +146,92 @@ export async function POST(request: NextRequest) {
       endDate: newEnd,
     });
 
-    // For each conflicting block, calculate new dates
-    // We'll cascade the bumps - if block A pushes block B, and block B now overlaps with block C, etc.
-    let blocksToCheck = [...conflictingBlocks];
-    const processedIds = new Set<string>([blockId]);
+    // If "stack" resolution, just move the block without bumping others
+    if (conflictResolution === "stack") {
+      // Only update the moved block, allow overlap
+    } else {
+      // Default "push" behavior - bump conflicting blocks
+      // For each conflicting block, calculate new dates
+      // We'll cascade the bumps - if block A pushes block B, and block B now overlaps with block C, etc.
+      let blocksToCheck = [...conflictingBlocks];
+      const processedIds = new Set<string>([blockId]);
 
-    // Current state of all blocks (including pending updates)
-    const blockStates = new Map<string, { startDate: Date; endDate: Date; locked: boolean }>();
+      // Current state of all blocks (including pending updates)
+      const blockStates = new Map<string, { startDate: Date; endDate: Date; locked: boolean }>();
 
-    // Initialize with current states
-    for (const b of engineerBlocks) {
-      blockStates.set(b.id, {
-        startDate: new Date(b.startDate),
-        endDate: new Date(b.endDate),
-        locked: b.initiative.lockDates,
-      });
-    }
-
-    // Add the moved block's new state
-    blockStates.set(blockId, {
-      startDate: newStart,
-      endDate: newEnd,
-      locked: false,
-    });
-
-    while (blocksToCheck.length > 0) {
-      const currentBlock = blocksToCheck.shift()!;
-
-      if (processedIds.has(currentBlock.id)) continue;
-      processedIds.add(currentBlock.id);
-
-      // Skip locked blocks - they can't be moved
-      if (currentBlock.initiative.lockDates) {
-        continue;
+      // Initialize with current states
+      for (const b of engineerBlocks) {
+        blockStates.set(b.id, {
+          startDate: new Date(b.startDate),
+          endDate: new Date(b.endDate),
+          locked: b.initiative.lockDates,
+        });
       }
 
-      const currentState = blockStates.get(currentBlock.id)!;
+      // Add the moved block's new state
+      blockStates.set(blockId, {
+        startDate: newStart,
+        endDate: newEnd,
+        locked: false,
+      });
 
-      // Find all blocks that might push this one
-      let maxPushEnd: Date | null = null;
+      while (blocksToCheck.length > 0) {
+        const currentBlock = blocksToCheck.shift()!;
 
-      for (const [otherId, otherState] of blockStates.entries()) {
-        if (otherId === currentBlock.id) continue;
-        if (!processedIds.has(otherId) && otherId !== blockId) continue; // Only consider already processed blocks
+        if (processedIds.has(currentBlock.id)) continue;
+        processedIds.add(currentBlock.id);
 
-        // Check if this block overlaps with currentBlock
-        if (rangesOverlap(otherState.startDate, otherState.endDate, currentState.startDate, currentState.endDate)) {
-          // This block needs to be pushed
-          if (!maxPushEnd || otherState.endDate > maxPushEnd) {
-            maxPushEnd = otherState.endDate;
+        // Skip locked blocks - they can't be moved
+        if (currentBlock.initiative.lockDates) {
+          continue;
+        }
+
+        const currentState = blockStates.get(currentBlock.id)!;
+
+        // Find all blocks that might push this one
+        let maxPushEnd: Date | null = null;
+
+        for (const [otherId, otherState] of blockStates.entries()) {
+          if (otherId === currentBlock.id) continue;
+          if (!processedIds.has(otherId) && otherId !== blockId) continue; // Only consider already processed blocks
+
+          // Check if this block overlaps with currentBlock
+          if (rangesOverlap(otherState.startDate, otherState.endDate, currentState.startDate, currentState.endDate)) {
+            // This block needs to be pushed
+            if (!maxPushEnd || otherState.endDate > maxPushEnd) {
+              maxPushEnd = otherState.endDate;
+            }
           }
         }
-      }
 
-      if (maxPushEnd) {
-        // Calculate block duration in business days
-        const duration = businessDaysBetween(currentState.startDate, currentState.endDate);
+        if (maxPushEnd) {
+          // Calculate block duration in business days
+          const duration = businessDaysBetween(currentState.startDate, currentState.endDate);
 
-        // New start is the day after maxPushEnd (next business day)
-        const newBlockStart = addBusinessDays(maxPushEnd, 1);
-        const newBlockEnd = addBusinessDays(newBlockStart, duration - 1);
+          // New start is the day after maxPushEnd (next business day)
+          const newBlockStart = addBusinessDays(maxPushEnd, 1);
+          const newBlockEnd = addBusinessDays(newBlockStart, duration - 1);
 
-        // Update the state
-        blockStates.set(currentBlock.id, {
-          startDate: newBlockStart,
-          endDate: newBlockEnd,
-          locked: false,
-        });
+          // Update the state
+          blockStates.set(currentBlock.id, {
+            startDate: newBlockStart,
+            endDate: newBlockEnd,
+            locked: false,
+          });
 
-        updates.push({
-          id: currentBlock.id,
-          startDate: newBlockStart,
-          endDate: newBlockEnd,
-        });
+          updates.push({
+            id: currentBlock.id,
+            startDate: newBlockStart,
+            endDate: newBlockEnd,
+          });
 
-        // Now check if this new position conflicts with any other blocks
-        for (const b of engineerBlocks) {
-          if (!processedIds.has(b.id)) {
-            const bState = blockStates.get(b.id)!;
-            if (rangesOverlap(newBlockStart, newBlockEnd, bState.startDate, bState.endDate)) {
-              blocksToCheck.push(b);
+          // Now check if this new position conflicts with any other blocks
+          for (const b of engineerBlocks) {
+            if (!processedIds.has(b.id)) {
+              const bState = blockStates.get(b.id)!;
+              if (rangesOverlap(newBlockStart, newBlockEnd, bState.startDate, bState.endDate)) {
+                blocksToCheck.push(b);
+              }
             }
           }
         }

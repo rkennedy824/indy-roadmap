@@ -65,6 +65,7 @@ import Link from "next/link";
 import { InitiativeDetailPanel } from "./initiative-detail-panel";
 import { AddInitiativeDialog } from "./add-initiative-dialog";
 import { EditTimeOffDialog } from "./edit-timeoff-dialog";
+import { ConflictResolutionDialog } from "./conflict-resolution-dialog";
 
 const UNAVAILABILITY_LABELS: Record<string, string> = {
   PTO: "PTO",
@@ -160,6 +161,16 @@ export function RoadmapView({
     originalEngineerId: string | null;
   } | null>(null);
   const [isUpdatingBlock, setIsUpdatingBlock] = useState(false);
+
+  // Conflict resolution state
+  const [conflictState, setConflictState] = useState<{
+    blockId: string;
+    initiativeTitle: string;
+    newStartDate: Date;
+    newEndDate: Date;
+    newEngineerId: string | null;
+    conflictingBlocks: { id: string; initiative: { title: string }; startDate: string; endDate: string }[];
+  } | null>(null);
 
   // Add initiative dialog state
   const [addDialogState, setAddDialogState] = useState<{
@@ -646,7 +657,42 @@ export function RoadmapView({
         return `${year}-${month}-${day}`;
       };
 
-      // Call API to move the block (with bumping logic)
+      // First, check for conflicts
+      const checkResponse = await fetch("/api/schedule/move", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          blockId: blockDragState.block.id,
+          newStartDate: formatDate(newStart),
+          newEndDate: formatDate(newEnd),
+          newEngineerId: engineerChanged ? blockDragState.currentEngineerId : undefined,
+          conflictResolution: "check",
+        }),
+      });
+
+      if (!checkResponse.ok) {
+        const error = await checkResponse.json();
+        throw new Error(error.error || "Failed to check conflicts");
+      }
+
+      const checkResult = await checkResponse.json();
+
+      // If there are conflicts, show the resolution dialog
+      if (checkResult.hasConflicts && checkResult.conflictingBlocks.length > 0) {
+        setConflictState({
+          blockId: blockDragState.block.id,
+          initiativeTitle: blockDragState.block.initiative.title,
+          newStartDate: newStart,
+          newEndDate: newEnd,
+          newEngineerId: engineerChanged ? blockDragState.currentEngineerId : null,
+          conflictingBlocks: checkResult.conflictingBlocks,
+        });
+        setIsUpdatingBlock(false);
+        setBlockDragState(null);
+        return;
+      }
+
+      // No conflicts, proceed with move
       const response = await fetch("/api/schedule/move", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -670,6 +716,47 @@ export function RoadmapView({
     } finally {
       setIsUpdatingBlock(false);
       setBlockDragState(null);
+    }
+  };
+
+  // Handle conflict resolution
+  const handleConflictResolution = async (resolution: "stack" | "push") => {
+    if (!conflictState) return;
+
+    setIsUpdatingBlock(true);
+
+    try {
+      const formatDate = (d: Date) => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      };
+
+      const response = await fetch("/api/schedule/move", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          blockId: conflictState.blockId,
+          newStartDate: formatDate(conflictState.newStartDate),
+          newEndDate: formatDate(conflictState.newEndDate),
+          newEngineerId: conflictState.newEngineerId || undefined,
+          conflictResolution: resolution,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to move block");
+      }
+
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to resolve conflict:", error);
+      alert(error instanceof Error ? error.message : "Failed to move block");
+    } finally {
+      setIsUpdatingBlock(false);
+      setConflictState(null);
     }
   };
 
@@ -1294,6 +1381,20 @@ export function RoadmapView({
           block={selectedTimeOff}
           open={!!selectedTimeOff}
           onClose={() => setSelectedTimeOff(null)}
+        />
+      )}
+
+      {/* Conflict Resolution Dialog */}
+      {conflictState && (
+        <ConflictResolutionDialog
+          open={!!conflictState}
+          onClose={() => setConflictState(null)}
+          onResolve={handleConflictResolution}
+          movingInitiativeTitle={conflictState.initiativeTitle}
+          conflictingBlocks={conflictState.conflictingBlocks}
+          newStartDate={conflictState.newStartDate}
+          newEndDate={conflictState.newEndDate}
+          isLoading={isUpdatingBlock}
         />
       )}
     </div>
