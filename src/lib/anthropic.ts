@@ -176,19 +176,21 @@ No headers, no bullet points, no sections. Just a short paragraph that an exec c
 
 ---
 
-Write a brief client-facing summary with exactly two sections, separated by a blank line:
+Write a brief client-facing summary with exactly this format:
 
 **What We're Building**
-2-3 sentences describing what this feature/initiative does in clear, non-technical language.
+[2-3 sentences on a NEW LINE below the header]
 
 **Why It's Important**
-2-3 sentences explaining how this benefits the client and improves their experience.
+[2-3 sentences on a NEW LINE below the header]
 
-Important:
+CRITICAL FORMATTING RULES:
+- Each header must be on its own line with ** markdown bold **
+- The paragraph text must start on the NEXT LINE after the header (not on the same line)
+- There must be a blank line between the first section and the second header
 - Keep it SHORT - no more than 6 sentences total
-- MUST include a blank line between the two sections for readability
 - Do NOT mention: internal costs, team allocations, technical debt, timelines, or internal challenges
-- Do NOT include any other sections like "Timeline" or "What to Expect"
+- Do NOT include any other sections
 - Just these two sections, nothing else`;
   }
 }
@@ -249,17 +251,19 @@ No headers, no bullet points. Just a short paragraph an exec can read in 15 seco
 
 ---
 
-Write a brief client-facing summary with exactly two sections, separated by a blank line:
+Write a brief client-facing summary with exactly this format:
 
 **What We're Building**
-2-3 sentences describing what this feature/initiative does in clear, non-technical language.
+[2-3 sentences on a NEW LINE below the header]
 
 **Why It's Important**
-2-3 sentences explaining how this benefits the client and improves their experience.
+[2-3 sentences on a NEW LINE below the header]
 
-Important:
+CRITICAL FORMATTING RULES:
+- Each header must be on its own line with ** markdown bold **
+- The paragraph text must start on the NEXT LINE after the header (not on the same line)
+- There must be a blank line between the first section and the second header
 - Keep it SHORT - no more than 6 sentences total
-- MUST include a blank line between the two sections for readability
 - Do NOT mention: internal costs, team allocations, technical debt, timelines, or internal challenges
 - Do NOT include any other sections
 - Just these two sections, nothing else`;
