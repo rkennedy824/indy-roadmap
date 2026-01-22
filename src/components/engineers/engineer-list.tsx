@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Engineer, EngineerSpecialty, Specialty, ScheduledBlock, UnavailabilityBlock } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,13 +17,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, MoreHorizontal, Calendar, Clock } from "lucide-react";
+import { Search, MoreHorizontal, Calendar, Clock, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type EngineerWithRelations = Engineer & {
   specialties: (EngineerSpecialty & { specialty: Specialty })[];
@@ -34,8 +46,37 @@ interface EngineerListProps {
   engineers: EngineerWithRelations[];
 }
 
-export function EngineerList({ engineers }: EngineerListProps) {
+export function EngineerList({ engineers: initialEngineers }: EngineerListProps) {
+  const router = useRouter();
+  const [engineers, setEngineers] = useState(initialEngineers);
   const [search, setSearch] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<EngineerWithRelations | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/engineers/${deleteTarget.id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setEngineers(engineers.filter(e => e.id !== deleteTarget.id));
+        setDeleteTarget(null);
+        router.refresh();
+      } else {
+        const error = await response.json();
+        alert(error.error || "Failed to delete engineer");
+      }
+    } catch (error) {
+      console.error("Failed to delete engineer:", error);
+      alert("Failed to delete engineer");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const filteredEngineers = engineers.filter(
     (engineer) =>
@@ -196,6 +237,14 @@ export function EngineerList({ engineers }: EngineerListProps) {
                             Manage Availability
                           </Link>
                         </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => setDeleteTarget(engineer)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -212,6 +261,28 @@ export function EngineerList({ engineers }: EngineerListProps) {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Engineer</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {deleteTarget?.name}? This will also remove all their scheduled blocks and assignments. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
