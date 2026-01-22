@@ -29,7 +29,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MultiSelectFilter } from "@/components/ui/multi-select-filter";
 import { DateRangeSelector } from "@/components/ui/date-range-selector";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Rocket, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Rocket, Sparkles, Zap } from "lucide-react";
 import {
   format,
   startOfQuarter,
@@ -64,6 +64,7 @@ const STATUS_LABELS: Record<string, string> = {
   PROPOSED: "Planned",
   APPROVED: "Planned",
   IN_PROGRESS: "In Progress",
+  DEV_COMPLETE: "In Progress",
   DONE: "Completed",
   BLOCKED: "On Hold",
 };
@@ -79,6 +80,7 @@ export function ClientRoadmapView({
     useState<InitiativeWithRelations | null>(null);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [specialtyFilter, setSpecialtyFilter] = useState<string[]>([]);
+  const [inProgressExpanded, setInProgressExpanded] = useState(false);
   const [startDate, setStartDate] = useState(() =>
     initialStartDate ? new Date(initialStartDate) : startOfQuarter(new Date())
   );
@@ -187,6 +189,11 @@ export function ClientRoadmapView({
     return STATUS_LABELS[status] || status;
   };
 
+  // Get in-progress initiatives for the summary section
+  const inProgressInitiatives = useMemo(() => {
+    return initiatives.filter((i) => i.status === "IN_PROGRESS" || i.status === "DEV_COMPLETE");
+  }, [initiatives]);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -214,6 +221,93 @@ export function ClientRoadmapView({
           </div>
         </div>
       </header>
+
+      {/* What's In Progress Section */}
+      {inProgressInitiatives.length > 0 && (
+        <div className="border-b bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/20 dark:to-amber-950/20">
+          <div className="max-w-7xl mx-auto px-4 py-6">
+            <Card className="border-yellow-200 dark:border-yellow-800">
+              <CardHeader
+                className="pb-3 cursor-pointer select-none"
+                onClick={() => setInProgressExpanded(!inProgressExpanded)}
+              >
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Zap className="h-5 w-5 text-yellow-500" />
+                    Currently In Development
+                    <span className="text-sm font-normal text-muted-foreground">
+                      ({inProgressInitiatives.length} {inProgressInitiatives.length === 1 ? 'feature' : 'features'})
+                    </span>
+                  </CardTitle>
+                  {inProgressExpanded ? (
+                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </div>
+                {!inProgressExpanded && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Click to see what our team is actively building for you
+                  </p>
+                )}
+              </CardHeader>
+              {inProgressExpanded && (
+                <CardContent className="pt-0">
+                  <div className="space-y-3">
+                    {inProgressInitiatives.map((init) => {
+                      // Use client overview first, then description
+                      const fullText = init.clientOverview || init.description || "";
+                      // Get first two sentences as a summary
+                      const sentences = fullText.split(/[.!?]\s/).slice(0, 2);
+                      const summary = sentences.length > 0
+                        ? sentences.join(". ").trim() + (sentences[sentences.length - 1]?.endsWith('.') ? '' : '.')
+                        : "More details coming soon.";
+
+                      // Calculate expected completion from scheduled blocks
+                      const latestEndDate = init.scheduledBlocks.length > 0
+                        ? Math.max(...init.scheduledBlocks.map(b => new Date(b.endDate).getTime()))
+                        : null;
+                      const targetDate = init.masterTargetDate || init.betaTargetDate;
+                      const displayDate = targetDate
+                        ? format(new Date(targetDate), "MMMM yyyy")
+                        : latestEndDate
+                          ? format(new Date(latestEndDate), "MMMM yyyy")
+                          : null;
+
+                      return (
+                        <div
+                          key={init.id}
+                          className="flex gap-3 cursor-pointer hover:bg-muted/50 rounded-lg px-3 py-3 -mx-3 transition-colors"
+                          onClick={() => setSelectedInitiative(init)}
+                        >
+                          <div
+                            className="w-1.5 shrink-0 rounded-full mt-1"
+                            style={{ backgroundColor: getTagColor(init) }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <h4 className="font-medium text-sm">{init.title}</h4>
+                              {displayDate && (
+                                <span className="text-xs text-muted-foreground whitespace-nowrap flex items-center gap-1">
+                                  <Rocket className="h-3 w-3" />
+                                  {displayDate}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                              {summary}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              )}
+            </Card>
+          </div>
+        </div>
+      )}
 
       {/* Controls */}
       <div className="border-b bg-muted/30">
