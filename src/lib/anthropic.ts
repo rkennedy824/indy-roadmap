@@ -93,11 +93,11 @@ Focus on: what we're building, why it matters to the business, and when it ships
 Use plain language. Be direct. Think "elevator pitch" brevity.`;
 
     case "client":
-      return `You are a customer success manager creating client-facing feature announcements.
-Your writing is professional, benefits-focused, and builds excitement.
+      return `You are writing ultra-brief client-facing feature summaries.
+Your summaries are 4-6 sentences MAX split into two short sections.
 Never mention internal costs, technical debt, or internal resource constraints.
-Focus on what the client will gain and how it improves their experience.
-Use markdown formatting. Keep it concise and engaging.`;
+Focus on what we're building and why it matters to the client.
+Be direct, clear, and professional. No fluff or marketing speak.`;
   }
 }
 
@@ -176,18 +176,19 @@ No headers, no bullet points, no sections. Just a short paragraph that an exec c
 
 ---
 
-Please generate a Client-Facing Overview that we can share with our clients. Include:
+Write a brief client-facing summary with exactly two sections:
 
-1. **What We're Building** - Clear, non-technical description
-2. **How It Benefits You** - Specific benefits for the client
-3. **Timeline** - When they can expect to see this. Use the Scheduled Work Period and target release dates, NOT the effort estimate.
-4. **What to Expect** - Any actions they need to take or changes they'll see
+**What We're Building**
+2-3 sentences describing what this feature/initiative does in clear, non-technical language.
 
-Important guidelines:
-- Do NOT mention: internal costs, team allocations, technical debt, competitive pressures, or internal challenges
-- DO focus on: client value, improved experience, new capabilities
-- Keep it professional but warm and engaging
-- Length: 1 page maximum`;
+**Why It's Important**
+2-3 sentences explaining how this benefits the client and improves their experience.
+
+Important:
+- Keep it SHORT - no more than 6 sentences total
+- Do NOT mention: internal costs, team allocations, technical debt, timelines, or internal challenges
+- Do NOT include any other sections like "Timeline" or "What to Expect"
+- Just these two sections, nothing else`;
   }
 }
 
@@ -247,14 +248,19 @@ No headers, no bullet points. Just a short paragraph an exec can read in 15 seco
 
 ---
 
-Generate a Client-Facing Overview based on this initiative. Include:
+Write a brief client-facing summary with exactly two sections:
 
-1. **What We're Building** - Clear, non-technical description
-2. **How It Benefits You** - Specific benefits for the client
-3. **Timeline** - When they can expect to see this. Use the Scheduled Work Period and target release dates, NOT the effort estimate.
-4. **What to Expect** - Any changes they'll experience
+**What We're Building**
+2-3 sentences describing what this feature/initiative does in clear, non-technical language.
 
-Important: Do NOT mention internal costs, technical debt, or internal challenges. Focus on client value and improved experience. Keep it concise and engaging.`;
+**Why It's Important**
+2-3 sentences explaining how this benefits the client and improves their experience.
+
+Important:
+- Keep it SHORT - no more than 6 sentences total
+- Do NOT mention: internal costs, team allocations, technical debt, timelines, or internal challenges
+- Do NOT include any other sections
+- Just these two sections, nothing else`;
   }
 }
 
