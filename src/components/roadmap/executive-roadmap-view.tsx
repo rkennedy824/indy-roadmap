@@ -260,9 +260,45 @@ export function ExecutiveRoadmapView({
     return { inProgress, planned, completed, total: initiatives.length };
   }, [initiatives]);
 
-  // Get in-progress initiatives for the summary section
-  const inProgressInitiatives = useMemo(() => {
-    return initiatives.filter((i) => i.status === "IN_PROGRESS");
+  // Get in-progress initiatives for the summary section, grouped by client
+  const inProgressByClient = useMemo(() => {
+    const inProgress = initiatives.filter((i) => i.status === "IN_PROGRESS");
+
+    // Group by client
+    const grouped = new Map<string, { client: Client | null; initiatives: InitiativeWithRelations[] }>();
+
+    // Add "No Client" group
+    grouped.set("_none", { client: null, initiatives: [] });
+
+    inProgress.forEach((init) => {
+      const clientAccess = init.clientAccess || [];
+      if (clientAccess.length === 0) {
+        grouped.get("_none")!.initiatives.push(init);
+      } else {
+        // Add to each client's group
+        clientAccess.forEach((access) => {
+          if (!grouped.has(access.clientId)) {
+            grouped.set(access.clientId, { client: access.client, initiatives: [] });
+          }
+          grouped.get(access.clientId)!.initiatives.push(init);
+        });
+      }
+    });
+
+    // Convert to array and sort by client name
+    const result = Array.from(grouped.values())
+      .filter((g) => g.initiatives.length > 0)
+      .sort((a, b) => {
+        if (!a.client) return 1;
+        if (!b.client) return -1;
+        return a.client.name.localeCompare(b.client.name);
+      });
+
+    return result;
+  }, [initiatives]);
+
+  const inProgressCount = useMemo(() => {
+    return initiatives.filter((i) => i.status === "IN_PROGRESS").length;
   }, [initiatives]);
 
   return (
@@ -332,7 +368,7 @@ export function ExecutiveRoadmapView({
       )}
 
       {/* What's in Progress */}
-      {inProgressInitiatives.length > 0 && (
+      {inProgressCount > 0 && (
         <div className="border-b bg-muted/20">
           <div className="max-w-7xl mx-auto px-4 py-6">
             <Card>
@@ -345,7 +381,7 @@ export function ExecutiveRoadmapView({
                     <Zap className="h-5 w-5 text-yellow-500" />
                     What&apos;s in Progress
                     <span className="text-sm font-normal text-muted-foreground">
-                      ({inProgressInitiatives.length})
+                      ({inProgressCount})
                     </span>
                   </CardTitle>
                   {inProgressExpanded ? (
@@ -357,33 +393,68 @@ export function ExecutiveRoadmapView({
               </CardHeader>
               {inProgressExpanded && (
                 <CardContent className="pt-0">
-                  <div className="space-y-2">
-                    {inProgressInitiatives.map((init) => {
-                      const clients = init.clientAccess?.map(a => a.client.name) || [];
-                      const clientNote = clients.length > 0 ? ` (${clients.join(", ")})` : "";
-                      // Get first sentence as a succinct summary
-                      const fullText = init.executiveOverview || init.description || "";
-                      const firstSentence = fullText.split(/[.!?]\s/)[0];
-                      const summary = firstSentence ? (firstSentence.endsWith('.') ? firstSentence : firstSentence + ".") : "No description";
-                      return (
-                        <div
-                          key={init.id}
-                          className="flex gap-3 cursor-pointer hover:bg-muted/50 rounded px-2 py-2 -mx-2"
-                          onClick={() => setSelectedInitiative(init)}
-                        >
-                          <div
-                            className="w-1 shrink-0 rounded-full"
-                            style={{ backgroundColor: getTagColor(init) }}
-                          />
-                          <p className="text-sm">
-                            <span className="font-medium">{init.title}</span>
-                            {clientNote}
-                            {" — "}
-                            <span className="text-muted-foreground">{summary}</span>
-                          </p>
+                  <div className="space-y-6">
+                    {inProgressByClient.map((group) => (
+                      <div key={group.client?.id || "_none"}>
+                        <h4 className="font-medium text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          {group.client?.name || "Internal / No Client"}
+                        </h4>
+                        <div className="space-y-2 ml-6">
+                          {group.initiatives.map((init) => {
+                            // Get first sentence as a succinct summary
+                            const fullText = init.executiveOverview || init.description || "";
+                            const firstSentence = fullText.split(/[.!?]\s/)[0];
+                            const summary = firstSentence ? (firstSentence.endsWith('.') ? firstSentence : firstSentence + ".") : "No description";
+
+                            // Get delivery date - prefer beta, then master, then scheduled block end
+                            let deliveryDate: Date | null = null;
+                            let deliveryLabel = "";
+                            if (init.betaTargetDate) {
+                              deliveryDate = new Date(init.betaTargetDate);
+                              deliveryLabel = "Beta";
+                            } else if (init.masterTargetDate) {
+                              deliveryDate = new Date(init.masterTargetDate);
+                              deliveryLabel = "Release";
+                            } else if (init.scheduledBlocks.length > 0) {
+                              // Get latest scheduled block end date
+                              const latestBlock = init.scheduledBlocks.reduce((latest, block) =>
+                                new Date(block.endDate) > new Date(latest.endDate) ? block : latest
+                              );
+                              deliveryDate = new Date(latestBlock.endDate);
+                              deliveryLabel = "Est. completion";
+                            }
+
+                            return (
+                              <div
+                                key={init.id}
+                                className="flex gap-3 cursor-pointer hover:bg-muted/50 rounded px-2 py-2 -mx-2"
+                                onClick={() => setSelectedInitiative(init)}
+                              >
+                                <div
+                                  className="w-1 shrink-0 rounded-full"
+                                  style={{ backgroundColor: getTagColor(init) }}
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between gap-4">
+                                    <p className="text-sm">
+                                      <span className="font-medium">{init.title}</span>
+                                      {" — "}
+                                      <span className="text-muted-foreground">{summary}</span>
+                                    </p>
+                                    {deliveryDate && (
+                                      <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+                                        {deliveryLabel}: {format(deliveryDate, "MMM d")}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               )}
