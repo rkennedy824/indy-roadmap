@@ -349,37 +349,37 @@ export function ExecutiveRoadmapView({
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <Briefcase className="h-5 w-5" />
+              <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                  <Briefcase className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
-                <span className="text-xl font-semibold">Executive Roadmap</span>
+                <span className="text-lg sm:text-xl font-semibold">Executive Roadmap</span>
               </div>
-              <p className="text-muted-foreground">
+              <p className="text-sm text-muted-foreground hidden sm:block">
                 Strategic overview of engineering initiatives
               </p>
             </div>
-            <div className="text-right">
-              <div className="flex gap-4 text-sm">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm sm:text-right">
+              <div className="flex gap-3 sm:gap-4">
                 <div>
-                  <span className="text-muted-foreground">In Progress: </span>
+                  <span className="text-muted-foreground">Active: </span>
                   <span className="font-semibold">{stats.inProgress}</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Planned: </span>
                   <span className="font-semibold">{stats.planned}</span>
                 </div>
-                <div>
-                  <span className="text-muted-foreground">Completed: </span>
+                <div className="hidden sm:block">
+                  <span className="text-muted-foreground">Done: </span>
                   <span className="font-semibold">{stats.completed}</span>
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground mt-1">
+              <div className="text-xs sm:text-sm text-muted-foreground">
                 {format(startDate, "MMM d")} - {format(endDate, "MMM d, yyyy")}
-              </p>
+              </div>
             </div>
           </div>
         </div>
@@ -505,14 +505,21 @@ export function ExecutiveRoadmapView({
                                   style={{ backgroundColor: getTagColor(init) }}
                                 />
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-start justify-between gap-4">
-                                    <p className="text-sm">
-                                      <span className="font-medium">{init.title}</span>
-                                      {" — "}
-                                      <span className="text-muted-foreground">{summary}</span>
-                                    </p>
+                                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-4">
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm">
+                                        <span className="font-medium">{init.title}</span>
+                                        <span className="hidden sm:inline">
+                                          {" — "}
+                                          <span className="text-muted-foreground">{summary}</span>
+                                        </span>
+                                      </p>
+                                      <p className="text-xs text-muted-foreground sm:hidden line-clamp-2 mt-0.5">
+                                        {summary}
+                                      </p>
+                                    </div>
                                     {deliveryDate && (
-                                      <span className="inline-flex items-center gap-1.5 text-xs font-medium whitespace-nowrap shrink-0 bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                                      <span className="inline-flex items-center gap-1.5 text-xs font-medium whitespace-nowrap shrink-0 bg-primary/10 text-primary px-2 py-0.5 rounded-full w-fit">
                                         {deliveryLabel}: {format(deliveryDate, "MMM d")}
                                       </span>
                                     )}
@@ -534,47 +541,137 @@ export function ExecutiveRoadmapView({
 
       {/* Controls */}
       <div className="border-b bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <MultiSelectFilter
-              options={[
-                { value: "IN_PROGRESS", label: "In Progress" },
-                { value: "PROPOSED", label: "Proposed" },
-                { value: "APPROVED", label: "Approved" },
-                { value: "DONE", label: "Completed" },
-                { value: "BLOCKED", label: "Blocked" },
-              ]}
-              selected={statusFilter}
-              onChange={setStatusFilter}
-              placeholder="All Statuses"
-              className="w-[150px]"
-            />
-            <MultiSelectFilter
-              options={specialties.map((s) => ({ value: s.id, label: s.name, color: s.color || undefined }))}
-              selected={specialtyFilter}
-              onChange={setSpecialtyFilter}
-              placeholder="All Types"
-              className="w-[150px]"
-            />
-            <MultiSelectFilter
-              options={clients.map((c) => ({ value: c.id, label: c.name }))}
-              selected={clientFilter}
-              onChange={setClientFilter}
-              placeholder="All Clients"
-              className="w-[180px]"
-              searchable
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+              <MultiSelectFilter
+                options={[
+                  { value: "IN_PROGRESS", label: "In Progress" },
+                  { value: "PROPOSED", label: "Proposed" },
+                  { value: "APPROVED", label: "Approved" },
+                  { value: "DONE", label: "Completed" },
+                  { value: "BLOCKED", label: "Blocked" },
+                ]}
+                selected={statusFilter}
+                onChange={setStatusFilter}
+                placeholder="Status"
+                className="w-[110px] sm:w-[150px]"
+              />
+              <MultiSelectFilter
+                options={specialties.map((s) => ({ value: s.id, label: s.name, color: s.color || undefined }))}
+                selected={specialtyFilter}
+                onChange={setSpecialtyFilter}
+                placeholder="Type"
+                className="w-[100px] sm:w-[150px]"
+              />
+              <MultiSelectFilter
+                options={clients.map((c) => ({ value: c.id, label: c.name }))}
+                selected={clientFilter}
+                onChange={setClientFilter}
+                placeholder="Client"
+                className="w-[100px] sm:w-[180px]"
+                searchable
+              />
+            </div>
+            <DateRangeSelector
+              startDate={startDate}
+              endDate={endDate}
+              onRangeChange={handleRangeChange}
             />
           </div>
-          <DateRangeSelector
-            startDate={startDate}
-            endDate={endDate}
-            onRangeChange={handleRangeChange}
-          />
         </div>
       </div>
 
-      {/* Timeline */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      {/* Mobile Card View */}
+      <div className="sm:hidden max-w-7xl mx-auto px-4 py-4">
+        <div className="space-y-3">
+          {filteredInitiatives.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground border rounded-lg">
+              No initiatives match the current filters.
+            </div>
+          ) : (
+            filteredInitiatives.map((initiative) => {
+              // Get delivery date
+              let deliveryDate: Date | null = null;
+              let deliveryLabel = "";
+              if (initiative.betaTargetDate) {
+                deliveryDate = new Date(initiative.betaTargetDate);
+                deliveryLabel = "Beta";
+              } else if (initiative.masterTargetDate) {
+                deliveryDate = new Date(initiative.masterTargetDate);
+                deliveryLabel = "Release";
+              } else if (initiative.scheduledBlocks.length > 0) {
+                const latestBlock = initiative.scheduledBlocks.reduce((latest, block) =>
+                  new Date(block.endDate) > new Date(latest.endDate) ? block : latest
+                );
+                deliveryDate = new Date(latestBlock.endDate);
+                deliveryLabel = "Est.";
+              }
+
+              // Get schedule dates
+              const firstBlock = initiative.scheduledBlocks[0];
+              const lastBlock = initiative.scheduledBlocks[initiative.scheduledBlocks.length - 1];
+
+              return (
+                <Card
+                  key={initiative.id}
+                  className="cursor-pointer hover:bg-muted/20 transition-colors"
+                  onClick={() => setSelectedInitiative(initiative)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div
+                        className="w-1 self-stretch rounded-full shrink-0"
+                        style={{ backgroundColor: getTagColor(initiative) }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <h3 className="font-medium text-sm leading-tight">{initiative.title}</h3>
+                          <Badge
+                            variant="secondary"
+                            className={`${STATUS_COLORS[initiative.status]} text-xs shrink-0`}
+                          >
+                            {STATUS_LABELS[initiative.status]}
+                          </Badge>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                          {firstBlock && lastBlock && (
+                            <span>
+                              {format(toLocalDate(firstBlock.startDate), "MMM d")} - {format(toLocalDate(lastBlock.endDate), "MMM d")}
+                            </span>
+                          )}
+                          {deliveryDate && (
+                            <span className="inline-flex items-center bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">
+                              {deliveryLabel}: {format(deliveryDate, "MMM d")}
+                            </span>
+                          )}
+                        </div>
+                        {initiative.clientAccess && initiative.clientAccess.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {initiative.clientAccess.slice(0, 3).map((access) => (
+                              <Badge key={access.id} variant="outline" className="text-xs">
+                                {access.client.name}
+                              </Badge>
+                            ))}
+                            {initiative.clientAccess.length > 3 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{initiative.clientAccess.length - 3}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {/* Timeline (Desktop) */}
+      <div className="hidden sm:block max-w-7xl mx-auto px-4 py-6">
         <ScrollArea className="w-full">
           <div className="min-w-max">
             {/* Timeline Header */}
