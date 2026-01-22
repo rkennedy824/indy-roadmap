@@ -205,6 +205,10 @@ export function InitiativeDetailPanel({
   const [isEditingEngineers, setIsEditingEngineers] = useState(false);
   const [selectedEngineerIds, setSelectedEngineerIds] = useState<string[]>([]);
 
+  // Schedule block editing state
+  const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
+  const [editingBlockDates, setEditingBlockDates] = useState<{ startDate: string; endDate: string }>({ startDate: "", endDate: "" });
+
   // Fetch initiative data when ID changes
   useEffect(() => {
     if (!initiativeId) {
@@ -412,6 +416,58 @@ export function InitiativeDetailPanel({
     }
   };
 
+  const startEditingBlock = (block: ScheduledBlock & { engineer: Engineer }) => {
+    setEditingBlockId(block.id);
+    setEditingBlockDates({
+      startDate: format(new Date(block.startDate), "yyyy-MM-dd"),
+      endDate: format(new Date(block.endDate), "yyyy-MM-dd"),
+    });
+  };
+
+  const cancelEditingBlock = () => {
+    setEditingBlockId(null);
+    setEditingBlockDates({ startDate: "", endDate: "" });
+  };
+
+  const saveScheduleBlock = async () => {
+    if (!editingBlockId || !editingBlockDates.startDate || !editingBlockDates.endDate) return;
+
+    setIsSaving(true);
+    try {
+      const response = await fetch("/api/schedule/move", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          blockId: editingBlockId,
+          newStartDate: editingBlockDates.startDate,
+          newEndDate: editingBlockDates.endDate,
+          conflictResolution: "push",
+        }),
+      });
+
+      if (response.ok) {
+        // Refetch initiative data to get updated schedule
+        const refetch = await fetch(`/api/initiatives/${initiative?.id}`);
+        if (refetch.ok) {
+          setInitiative(await refetch.json());
+        }
+        setEditingBlockId(null);
+        setEditingBlockDates({ startDate: "", endDate: "" });
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2000);
+        router.refresh();
+      } else {
+        const error = await response.json();
+        alert(error.error || "Failed to update schedule");
+      }
+    } catch (error) {
+      console.error("Failed to update schedule:", error);
+      alert("Failed to update schedule");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (!initiativeId) return null;
 
   return (
@@ -592,27 +648,76 @@ export function InitiativeDetailPanel({
                 </div>
 
                 {initiative.scheduledBlocks?.length > 0 ? (
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     {initiative.scheduledBlocks.map((block) => (
-                      <div key={block.id} className="flex items-center justify-between text-xs group">
-                        <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground">
-                            {format(new Date(block.startDate), "MMM d")} - {format(new Date(block.endDate), "MMM d")}
-                          </span>
-                          <span className="font-medium">{block.engineer.name}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3 text-muted-foreground" />
-                          <span>{block.hoursAllocated}h</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 text-destructive"
-                            onClick={() => deleteScheduledBlock(block.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
+                      <div key={block.id} className="text-xs group">
+                        {editingBlockId === block.id ? (
+                          <div className="space-y-2 p-2 bg-muted rounded-md">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1">
+                                <Label className="text-xs text-muted-foreground">Start</Label>
+                                <Input
+                                  type="date"
+                                  value={editingBlockDates.startDate}
+                                  onChange={(e) => setEditingBlockDates({ ...editingBlockDates, startDate: e.target.value })}
+                                  className="h-7 text-xs"
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <Label className="text-xs text-muted-foreground">End</Label>
+                                <Input
+                                  type="date"
+                                  value={editingBlockDates.endDate}
+                                  onChange={(e) => setEditingBlockDates({ ...editingBlockDates, endDate: e.target.value })}
+                                  className="h-7 text-xs"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">{block.engineer.name}</span>
+                              <div className="flex items-center gap-1">
+                                <Button size="sm" className="h-6 px-2" onClick={saveScheduleBlock} disabled={isSaving}>
+                                  <Save className="h-3 w-3" />
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-6 px-2" onClick={cancelEditingBlock}>
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="text-muted-foreground cursor-pointer hover:text-primary"
+                                onClick={() => startEditingBlock(block)}
+                              >
+                                {format(new Date(block.startDate), "MMM d")} - {format(new Date(block.endDate), "MMM d")}
+                              </span>
+                              <span className="font-medium">{block.engineer.name}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3 text-muted-foreground" />
+                              <span>{block.hoursAllocated}h</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100"
+                                onClick={() => startEditingBlock(block)}
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 text-destructive"
+                                onClick={() => deleteScheduledBlock(block.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
