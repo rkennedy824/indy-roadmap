@@ -131,6 +131,17 @@ export function ClientRoadmapView({
       );
     }
 
+    // Sort by earliest scheduled block start date
+    filtered = [...filtered].sort((a, b) => {
+      const aStart = a.scheduledBlocks.length > 0
+        ? Math.min(...a.scheduledBlocks.map((block) => new Date(block.startDate).getTime()))
+        : Infinity;
+      const bStart = b.scheduledBlocks.length > 0
+        ? Math.min(...b.scheduledBlocks.map((block) => new Date(block.startDate).getTime()))
+        : Infinity;
+      return aStart - bStart;
+    });
+
     return filtered;
   }, [initiatives, statusFilter, specialtyFilter]);
 
