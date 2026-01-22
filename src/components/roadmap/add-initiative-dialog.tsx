@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Plus, Calendar, PalmtreeIcon, Plane, HeartPulse, PartyPopper, Clock } from "lucide-react";
+import { Search, Plus, Calendar, PalmtreeIcon, Plane, HeartPulse, PartyPopper, Clock, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 
 const UNAVAILABILITY_OPTIONS: { type: UnavailabilityType; label: string; icon: typeof PalmtreeIcon }[] = [
@@ -62,19 +62,24 @@ export function AddInitiativeDialog({
   const [timeOffType, setTimeOffType] = useState<UnavailabilityType>("PTO");
   const [timeOffReason, setTimeOffReason] = useState("");
 
-  // Filter to show unscheduled initiatives (or initiatives that could use additional scheduling)
+  // Filter to show initiatives (including DONE ones that may need schedule blocks added)
   const filteredInitiatives = useMemo(() => {
     return initiatives
-      .filter((i) => i.status !== "DONE")
       .filter((i) =>
         i.title.toLowerCase().includes(search.toLowerCase()) ||
         i.description?.toLowerCase().includes(search.toLowerCase())
       )
       .sort((a, b) => {
-        // Sort by: has no scheduled blocks first, then by title
+        // Sort by: unscheduled first, then active before done, then by title
         const aUnscheduled = a.scheduledBlocks.length === 0 ? 0 : 1;
         const bUnscheduled = b.scheduledBlocks.length === 0 ? 0 : 1;
         if (aUnscheduled !== bUnscheduled) return aUnscheduled - bUnscheduled;
+
+        // Active initiatives before done
+        const aDone = a.status === "DONE" ? 1 : 0;
+        const bDone = b.status === "DONE" ? 1 : 0;
+        if (aDone !== bDone) return aDone - bDone;
+
         return a.title.localeCompare(b.title);
       });
   }, [initiatives, search]);
@@ -212,17 +217,23 @@ export function AddInitiativeDialog({
               ) : (
                 filteredInitiatives.map((initiative) => {
                   const isUnscheduled = initiative.scheduledBlocks.length === 0;
+                  const isDone = initiative.status === "DONE";
 
                   return (
                     <button
                       key={initiative.id}
                       onClick={() => handleScheduleExisting(initiative.id)}
                       disabled={isScheduling}
-                      className="w-full text-left p-3 rounded-lg border hover:bg-muted/50 transition-colors disabled:opacity-50"
+                      className={`w-full text-left p-3 rounded-lg border hover:bg-muted/50 transition-colors disabled:opacity-50 ${
+                        isDone ? "opacity-70" : ""
+                      }`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate">{initiative.title}</div>
+                          <div className="font-medium truncate flex items-center gap-1.5">
+                            {isDone && <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" />}
+                            <span className={isDone ? "text-muted-foreground" : ""}>{initiative.title}</span>
+                          </div>
                           {initiative.description && (
                             <div className="text-sm text-muted-foreground truncate mt-0.5">
                               {initiative.description}
@@ -246,7 +257,12 @@ export function AddInitiativeDialog({
                             </div>
                           )}
                         </div>
-                        <div className="shrink-0">
+                        <div className="shrink-0 flex flex-col items-end gap-1">
+                          {isDone && (
+                            <Badge variant="outline" className="text-xs whitespace-nowrap text-green-600 border-green-600">
+                              Completed
+                            </Badge>
+                          )}
                           {isUnscheduled ? (
                             <Badge variant="secondary" className="text-xs whitespace-nowrap">
                               Unscheduled
