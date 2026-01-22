@@ -434,7 +434,7 @@ export function ClientRoadmapView({
                 {(selectedInitiative.betaTargetDate || selectedInitiative.masterTargetDate) && (
                   <div className="rounded-xl border bg-card p-4 shadow-sm">
                     <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                      Release Timeline
+                      Target Release Timeline
                     </h4>
                     <div className="space-y-3">
                       {selectedInitiative.betaTargetDate && (
