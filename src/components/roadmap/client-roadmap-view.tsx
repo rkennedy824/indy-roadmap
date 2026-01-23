@@ -199,7 +199,7 @@ export function ClientRoadmapView({
   const INDY_DARK = "#1d1d22";
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background font-[family-name:var(--font-montserrat)]">
       {/* Header - INDY Cinema Group branded */}
       <header
         className="border-b"
