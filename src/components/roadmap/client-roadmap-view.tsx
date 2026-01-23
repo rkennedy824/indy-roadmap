@@ -29,7 +29,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MultiSelectFilter } from "@/components/ui/multi-select-filter";
 import { DateRangeSelector } from "@/components/ui/date-range-selector";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, ChevronDown, Rocket, Sparkles, Zap } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Rocket, Sparkles, Zap, Film } from "lucide-react";
 import {
   format,
   startOfQuarter,
@@ -194,29 +194,49 @@ export function ClientRoadmapView({
     return initiatives.filter((i) => i.status === "IN_PROGRESS" || i.status === "DEV_COMPLETE");
   }, [initiatives]);
 
+  // INDY Cinema Group brand colors
+  const INDY_BLUE = "#2ea3f2";
+  const INDY_DARK = "#1d1d22";
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
+      {/* Header - INDY Cinema Group branded */}
+      <header
+        className="border-b"
+        style={{ backgroundColor: INDY_DARK }}
+      >
+        <div className="max-w-7xl mx-auto px-4 py-5 sm:py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">
-                  I
+              <div className="flex items-center gap-3 mb-1">
+                <div
+                  className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl"
+                  style={{ backgroundColor: INDY_BLUE }}
+                >
+                  <Film className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                 </div>
-                <span className="text-xl font-semibold">INDY Roadmap</span>
+                <div>
+                  <span className="text-lg sm:text-xl font-semibold text-white tracking-tight">
+                    INDY Cinema Group
+                  </span>
+                  <p className="text-xs sm:text-sm text-gray-400">
+                    Product Roadmap
+                  </p>
+                </div>
               </div>
-              {clientName && (
-                <p className="text-muted-foreground">
-                  Roadmap for {clientName}
-                </p>
-              )}
             </div>
-            <div className="text-right text-sm text-muted-foreground">
-              <p>
+            <div className="flex items-center gap-4">
+              {clientName && (
+                <span
+                  className="text-sm font-medium px-3 py-1 rounded-full"
+                  style={{ backgroundColor: `${INDY_BLUE}20`, color: INDY_BLUE }}
+                >
+                  {clientName}
+                </span>
+              )}
+              <span className="text-sm text-gray-400">
                 {format(startDate, "MMM d")} - {format(endDate, "MMM d, yyyy")}
-              </p>
+              </span>
             </div>
           </div>
         </div>
@@ -224,16 +244,24 @@ export function ClientRoadmapView({
 
       {/* What's In Progress Section */}
       {inProgressInitiatives.length > 0 && (
-        <div className="border-b bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/20 dark:to-amber-950/20">
+        <div
+          className="border-b"
+          style={{ background: `linear-gradient(135deg, ${INDY_BLUE}08 0%, ${INDY_BLUE}03 100%)` }}
+        >
           <div className="max-w-7xl mx-auto px-4 py-6">
-            <Card className="border-yellow-200 dark:border-yellow-800">
+            <Card className="border-[#2ea3f2]/30 shadow-sm">
               <CardHeader
                 className="pb-3 cursor-pointer select-none"
                 onClick={() => setInProgressExpanded(!inProgressExpanded)}
               >
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2 text-lg">
-                    <Zap className="h-5 w-5 text-yellow-500" />
+                    <div
+                      className="flex h-7 w-7 items-center justify-center rounded-lg"
+                      style={{ backgroundColor: `${INDY_BLUE}15` }}
+                    >
+                      <Zap className="h-4 w-4" style={{ color: INDY_BLUE }} />
+                    </div>
                     Currently In Development
                     <span className="text-sm font-normal text-muted-foreground">
                       ({inProgressInitiatives.length} {inProgressInitiatives.length === 1 ? 'feature' : 'features'})
@@ -371,12 +399,16 @@ export function ClientRoadmapView({
               {/* Today indicator line */}
               {todayIndex >= 0 && (
                 <div
-                  className="absolute top-0 bottom-0 w-0.5 bg-primary z-10 pointer-events-none"
+                  className="absolute top-0 bottom-0 w-0.5 z-10 pointer-events-none"
                   style={{
                     left: 250 + todayIndex * CELL_WIDTH + CELL_WIDTH / 2,
+                    backgroundColor: INDY_BLUE,
                   }}
                 >
-                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-primary" />
+                  <div
+                    className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full"
+                    style={{ backgroundColor: INDY_BLUE }}
+                  />
                 </div>
               )}
 
