@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { BoardConfigCard } from "./board-config-card";
+import { AddBoardDialog } from "./add-board-dialog";
 
 interface BoardConfig {
   id: string;
@@ -70,6 +71,7 @@ export function MondayIntegrationCard({ config }: MondayIntegrationCardProps) {
     success: boolean;
     message: string;
   } | null>(null);
+  const [addBoardOpen, setAddBoardOpen] = useState(false);
 
   // Form state
   const [accessToken, setAccessToken] = useState("");
@@ -338,7 +340,7 @@ export function MondayIntegrationCard({ config }: MondayIntegrationCardProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => router.push("/integrations/monday/boards")}
+                  onClick={() => setAddBoardOpen(true)}
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Add Board
@@ -360,12 +362,20 @@ export function MondayIntegrationCard({ config }: MondayIntegrationCardProps) {
                   <Button
                     variant="link"
                     size="sm"
-                    onClick={() => router.push("/integrations/monday/boards")}
+                    onClick={() => setAddBoardOpen(true)}
                   >
                     Add your first board
                   </Button>
                 </div>
               )}
+
+              {/* Add Board Dialog */}
+              <AddBoardDialog
+                open={addBoardOpen}
+                onOpenChange={setAddBoardOpen}
+                integrationId={config.id}
+                existingBoardIds={config.boardConfigs.map((b) => b.boardId)}
+              />
             </div>
 
             {/* Actions */}
