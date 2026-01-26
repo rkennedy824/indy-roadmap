@@ -202,6 +202,8 @@ model Initiative {
   scheduledBlocks ScheduledBlock[]
   clientAccess    ClientInitiativeAccess[]
   sourceIdea      Idea?
+  jiraSync        JiraSync?
+  mondayLink      MondayItemLink?
 }
 
 enum InitiativeStatus {
@@ -407,6 +409,7 @@ model Idea {
   comments          IdeaComment[]
   attachments       IdeaAttachment[]
   impactedClients   IdeaClientImpact[]
+  mondayLink        MondayItemLink?
 
   @@index([status])
   @@index([submitterId])
@@ -479,4 +482,276 @@ model AuditLog {
 
   @@index([entityType, entityId])
   @@index([createdAt])
+}
+
+// ============================================
+// Jira Integration
+// ============================================
+
+model JiraConfig {
+  id              String    @id @default(cuid())
+  siteUrl         String    // e.g., "company.atlassian.net"
+  email           String    // API token email
+  apiToken        String    // API token (should be encrypted in production)
+  projectKey      String?   // Default project key
+  isActive        Boolean   @default(true)
+  lastSyncAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model JiraSync {
+  id              String      @id @default(cuid())
+  initiativeId    String      @unique
+  jiraEpicKey     String      @unique  // e.g., "PROJ-123"
+  jiraEpicId      String      // Jira internal ID
+  lastSyncedAt    DateTime
+  syncStatus      SyncStatus  @default(SYNCED)
+  lastError       String?
+
+  initiative      Initiative  @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  childIssues     JiraChildIssue[]
+
+  @@index([jiraEpicKey])
+}
+
+model JiraChildIssue {
+  id              String   @id @default(cuid())
+  jiraSyncId      String
+  issueKey        String   // e.g., "PROJ-456"
+  issueId         String   // Jira internal ID
+  issueType       String   // Story, Task, Bug, etc.
+  summary         String
+  status          String
+  statusCategory  String?  // "To Do", "In Progress", "Done"
+  storyPoints     Float?
+  sprintName      String?
+  assignee        String?
+  lastSyncedAt    DateTime
+
+  jiraSync        JiraSync @relation(fields: [jiraSyncId], references: [id], onDelete: Cascade)
+
+  @@unique([jiraSyncId, issueKey])
+  @@index([issueKey])
+}
+
+enum SyncStatus {
+  SYNCED
+  PENDING_PUSH
+  PENDING_PULL
+  CONFLICT
+  ERROR
+}
+
+// ============================================
+// Monday.com Integration
+// ============================================
+
+model MondayIntegration {
+  id                String    @id @default(cuid())
+  accountId         String    @unique  // Monday.com account ID
+  accountName       String?   // Account display name
+  apiVersion        String    @default("2024-10")  // Pinned API version
+
+  // OAuth tokens
+  accessToken       String
+  refreshToken      String?
+  tokenExpiresAt    DateTime?
+
+  // Personal token fallback (alternative auth)
+  personalApiToken  String?
+
+  // Connection metadata
+  isActive          Boolean   @default(true)
+  lastHealthCheck   DateTime?
+  healthStatus      String?   // "healthy", "degraded", "error"
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  boardConfigs      MondayBoardConfig[]
+  eventLogs         IntegrationEventLog[]
+}
+
+model MondayBoardConfig {
+  id                  String    @id @default(cuid())
+  integrationId       String
+  boardId             String    // Monday.com board ID
+  boardName           String?
+
+  // Target entity type for this board
+  entityType          MondayEntityType  @default(IDEA)
+
+  // Webhook configuration
+  webhookId           String?   // Monday webhook ID
+  webhookSecret       String?   // For challenge verification
+  webhookEnabled      Boolean   @default(true)
+
+  // Polling fallback
+  pollingEnabled      Boolean   @default(true)
+  pollingIntervalMins Int       @default(5)
+  lastPolledAt        DateTime?
+
+  // Sync behavior
+  ingestMode          MondayIngestMode  @default(CONTINUOUS)
+  writebackEnabled    Boolean   @default(false)
+
+  isActive            Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  integration         MondayIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  fieldMappings       MondayFieldMapping[]
+  statusMappings      MondayStatusMapping[]
+  itemLinks           MondayItemLink[]
+
+  @@unique([integrationId, boardId])
+}
+
+enum MondayEntityType {
+  IDEA
+  INITIATIVE
+}
+
+enum MondayIngestMode {
+  ONCE        // Import only, no continuous sync
+  CONTINUOUS  // Keep syncing updates
+}
+
+model MondayFieldMapping {
+  id              String    @id @default(cuid())
+  boardConfigId   String
+
+  // Monday.com field reference
+  mondayColumnId  String    // Column ID from Monday API
+  mondayColumnType String   // "text", "status", "date", "person", etc.
+  mondayColumnTitle String?
+
+  // INDY field reference
+  indyFieldName   String    // "title", "problemStatement", "tags", etc.
+  indyFieldType   String    // "string", "text", "date", "tags", "client"
+
+  // Sync policy
+  syncDirection   FieldSyncDirection  @default(INBOUND)
+  isRequired      Boolean   @default(false)
+
+  // Transform configuration (JSON)
+  transformConfig Json?     // {"defaultValue": "...", "mapping": {...}}
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  boardConfig     MondayBoardConfig @relation(fields: [boardConfigId], references: [id], onDelete: Cascade)
+
+  @@unique([boardConfigId, mondayColumnId])
+  @@unique([boardConfigId, indyFieldName])
+}
+
+enum FieldSyncDirection {
+  INBOUND       // Monday -> INDY only
+  OUTBOUND      // INDY -> Monday only
+  BIDIRECTIONAL // Both ways
+}
+
+model MondayStatusMapping {
+  id              String    @id @default(cuid())
+  boardConfigId   String
+
+  // Monday status label
+  mondayLabelId   String?   // Label ID (null for unmapped)
+  mondayLabelName String    // Display name like "Working on it"
+  mondayLabelColor String?  // Hex color
+
+  // INDY status mapping
+  indyStatus      String    // IdeaStatus or InitiativeStatus value
+
+  // Auto-create if missing
+  createIfMissing Boolean   @default(false)
+
+  boardConfig     MondayBoardConfig @relation(fields: [boardConfigId], references: [id], onDelete: Cascade)
+
+  @@unique([boardConfigId, mondayLabelName])
+  @@unique([boardConfigId, indyStatus])
+}
+
+model MondayItemLink {
+  id              String    @id @default(cuid())
+  boardConfigId   String
+
+  // Monday item reference
+  mondayItemId    String
+  mondayItemName  String?
+
+  // INDY entity reference (either ideaId or initiativeId)
+  ideaId          String?   @unique
+  initiativeId    String?   @unique
+
+  // Sync state
+  lastSyncedAt    DateTime
+  syncStatus      SyncStatus  @default(SYNCED)
+  lastError       String?
+
+  // Loop prevention
+  lastOutboundAt  DateTime?  // Timestamp of last outbound update
+  outboundLockUntil DateTime? // Ignore inbound until this time
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  boardConfig     MondayBoardConfig @relation(fields: [boardConfigId], references: [id], onDelete: Cascade)
+  idea            Idea?     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  initiative      Initiative? @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+
+  @@unique([boardConfigId, mondayItemId])
+  @@index([mondayItemId])
+}
+
+model IntegrationEventLog {
+  id              String    @id @default(cuid())
+  integrationId   String?
+
+  // Event identification
+  direction       EventDirection
+  eventType       String    // "item.created", "item.updated", "status.changed", etc.
+  source          String    // "webhook", "poll", "manual", "writeback"
+
+  // Entity references
+  mondayItemId    String?
+  indyEntityType  String?   // "idea" or "initiative"
+  indyEntityId    String?
+
+  // Event details
+  payload         Json?     // Raw event payload (sanitized)
+  changes         Json?     // {"field": {"old": ..., "new": ...}}
+
+  // Outcome
+  status          EventStatus @default(PENDING)
+  errorMessage    String?
+  errorCode       String?
+  retryCount      Int       @default(0)
+
+  // Timing
+  receivedAt      DateTime  @default(now())
+  processedAt     DateTime?
+  durationMs      Int?
+
+  integration     MondayIntegration? @relation(fields: [integrationId], references: [id], onDelete: SetNull)
+
+  @@index([integrationId, receivedAt])
+  @@index([status, receivedAt])
+  @@index([mondayItemId])
+  @@index([indyEntityId])
+}
+
+enum EventDirection {
+  INBOUND   // Monday -> INDY
+  OUTBOUND  // INDY -> Monday
+}
+
+enum EventStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+  SKIPPED   // e.g., loop prevention, no-op
 }
