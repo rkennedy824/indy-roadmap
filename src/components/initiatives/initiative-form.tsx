@@ -91,6 +91,8 @@ export function InitiativeForm({
   const [formData, setFormData] = useState({
     title: initiative?.title || "",
     description: initiative?.description || "",
+    customerFacingTitle: initiative?.customerFacingTitle || "",
+    customerFacingDescription: initiative?.customerFacingDescription || "",
     prdContent: initiative?.prdContent || "",
     prdUrl: initiative?.prdUrl || "",
     status: initiative?.status || "DRAFT",
@@ -419,6 +421,38 @@ export function InitiativeForm({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Customer-Facing Content</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Optional alternative title and description shown to clients. If not set, the internal title/description will be used.
+          </p>
+          <div className="space-y-2">
+            <Label htmlFor="customerFacingTitle">Customer-Facing Title</Label>
+            <Input
+              id="customerFacingTitle"
+              value={formData.customerFacingTitle}
+              onChange={(e) => setFormData({ ...formData, customerFacingTitle: e.target.value })}
+              placeholder="Leave blank to use internal title"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="customerFacingDescription">Customer-Facing Description</Label>
+            <Textarea
+              id="customerFacingDescription"
+              value={formData.customerFacingDescription}
+              onChange={(e) =>
+                setFormData({ ...formData, customerFacingDescription: e.target.value })
+              }
+              rows={3}
+              placeholder="Leave blank to use internal description"
+            />
           </div>
         </CardContent>
       </Card>

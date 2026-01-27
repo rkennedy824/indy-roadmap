@@ -152,6 +152,11 @@ model Initiative {
   id              String           @id @default(cuid())
   title           String
   description     String?
+
+  // Customer-facing versions (shown to clients instead of internal title/description)
+  customerFacingTitle       String?
+  customerFacingDescription String?  @db.Text
+
   prdContent      String?          @db.Text // Markdown content
   prdUrl          String?          // External link
   status          InitiativeStatus @default(DRAFT)

@@ -283,8 +283,9 @@ export function ClientRoadmapView({
                 <CardContent className="pt-0">
                   <div className="space-y-3">
                     {inProgressInitiatives.map((init) => {
-                      // Use client overview first, then description
-                      const fullText = init.clientOverview || init.description || "";
+                      // Use customer-facing content first, then client overview, then internal
+                      const displayTitle = init.customerFacingTitle || init.title;
+                      const fullText = init.customerFacingDescription || init.clientOverview || init.description || "";
                       // Get first two sentences as a summary
                       const sentences = fullText.split(/[.!?]\s/).slice(0, 2);
                       const summary = sentences.length > 0
@@ -314,7 +315,7 @@ export function ClientRoadmapView({
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
-                              <h4 className="font-medium text-sm">{init.title}</h4>
+                              <h4 className="font-medium text-sm">{displayTitle}</h4>
                               {displayDate && (
                                 <span className="text-xs text-muted-foreground whitespace-nowrap flex items-center gap-1">
                                   <Rocket className="h-3 w-3" />
@@ -419,7 +420,7 @@ export function ClientRoadmapView({
                 onClick={() => setSelectedInitiative(initiative)}
               >
                 <div className="w-[250px] shrink-0 p-3 border-r bg-background group-hover:bg-muted sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
-                  <div className="font-medium truncate">{initiative.title}</div>
+                  <div className="font-medium truncate">{initiative.customerFacingTitle || initiative.title}</div>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {initiative.tags.slice(0, 2).map((tag) => (
                       <Badge
@@ -523,7 +524,7 @@ export function ClientRoadmapView({
                 <SheetHeader className="space-y-3">
                   <div className="flex items-start justify-between gap-4">
                     <SheetTitle className="text-xl font-semibold leading-tight pr-4">
-                      {selectedInitiative.title}
+                      {selectedInitiative.customerFacingTitle || selectedInitiative.title}
                     </SheetTitle>
                   </div>
                   <SheetDescription asChild>
@@ -608,16 +609,16 @@ export function ClientRoadmapView({
                 )}
 
                 {/* Description/Overview Card */}
-                {(selectedInitiative.clientOverview || selectedInitiative.description) && (
+                {(selectedInitiative.customerFacingDescription || selectedInitiative.clientOverview || selectedInitiative.description) && (
                   <div className="rounded-xl border bg-card p-4 shadow-sm">
                     <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
-                      {selectedInitiative.clientOverview && <Sparkles className="h-3.5 w-3.5" />}
-                      {selectedInitiative.clientOverview ? "About This Feature" : "Description"}
+                      {(selectedInitiative.clientOverview && !selectedInitiative.customerFacingDescription) && <Sparkles className="h-3.5 w-3.5" />}
+                      {(selectedInitiative.customerFacingDescription || selectedInitiative.clientOverview) ? "About This Feature" : "Description"}
                     </h4>
-                    {selectedInitiative.clientOverview ? (
+                    {(selectedInitiative.customerFacingDescription || selectedInitiative.clientOverview) ? (
                       <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:text-sm prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-2 prose-p:text-foreground/80 prose-p:leading-relaxed prose-p:mb-3 prose-p:text-sm prose-ul:my-2 prose-ul:text-sm prose-li:text-foreground/80 prose-li:mb-1 prose-strong:text-foreground prose-strong:font-medium">
                         <ReactMarkdown>
-                          {selectedInitiative.clientOverview}
+                          {selectedInitiative.customerFacingDescription || selectedInitiative.clientOverview || ""}
                         </ReactMarkdown>
                       </div>
                     ) : (
