@@ -76,6 +76,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { DocGenerationWizard } from "./doc-generation-wizard";
 import { DeleteInitiativeButton } from "./delete-initiative-button";
+import { JiraPanel } from "./jira-panel";
 
 // Types
 type InitiativeWithRelations = Initiative & {
@@ -170,6 +171,8 @@ export function InitiativeDetailView({
   const [formData, setFormData] = useState({
     title: initiative.title,
     description: initiative.description || "",
+    customerFacingTitle: initiative.customerFacingTitle || "",
+    customerFacingDescription: initiative.customerFacingDescription || "",
     status: initiative.status,
     priority: initiative.priority,
     effortEstimate: initiative.effortEstimate ?? 1,
@@ -240,6 +243,8 @@ export function InitiativeDetailView({
   const originalValues = useMemo(() => ({
     title: initiative.title,
     description: initiative.description || "",
+    customerFacingTitle: initiative.customerFacingTitle || "",
+    customerFacingDescription: initiative.customerFacingDescription || "",
     status: initiative.status,
     priority: initiative.priority,
     effortEstimate: initiative.effortEstimate ?? 1,
@@ -267,6 +272,8 @@ export function InitiativeDetailView({
   const isDirty = useMemo(() => {
     if (formData.title !== originalValues.title) return true;
     if (formData.description !== originalValues.description) return true;
+    if (formData.customerFacingTitle !== originalValues.customerFacingTitle) return true;
+    if (formData.customerFacingDescription !== originalValues.customerFacingDescription) return true;
     if (formData.status !== originalValues.status) return true;
     if (formData.priority !== originalValues.priority) return true;
     if (formData.effortEstimate !== originalValues.effortEstimate) return true;
@@ -355,6 +362,8 @@ export function InitiativeDetailView({
     setFormData({
       title: initiative.title,
       description: initiative.description || "",
+      customerFacingTitle: initiative.customerFacingTitle || "",
+      customerFacingDescription: initiative.customerFacingDescription || "",
       status: initiative.status,
       priority: initiative.priority,
       effortEstimate: initiative.effortEstimate ?? 1,
@@ -649,6 +658,39 @@ export function InitiativeDetailView({
                 placeholder="Add a description..."
                 className="min-h-[100px] border-transparent hover:border-input focus:border-input bg-transparent resize-none"
               />
+            </CardContent>
+          </Card>
+
+          {/* Customer-Facing Content */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Customer-Facing Content
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Optional alternative title and description shown to clients instead of internal content.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label className="text-xs text-muted-foreground">Customer-Facing Title</Label>
+                <Input
+                  value={formData.customerFacingTitle}
+                  onChange={(e) => setFormData({ ...formData, customerFacingTitle: e.target.value })}
+                  placeholder="Leave blank to use internal title"
+                  className="mt-1 border-transparent hover:border-input focus:border-input bg-transparent"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Customer-Facing Description</Label>
+                <Textarea
+                  value={formData.customerFacingDescription}
+                  onChange={(e) => setFormData({ ...formData, customerFacingDescription: e.target.value })}
+                  placeholder="Leave blank to use internal description"
+                  className="mt-1 min-h-[80px] border-transparent hover:border-input focus:border-input bg-transparent resize-none"
+                />
+              </div>
             </CardContent>
           </Card>
 
@@ -1282,6 +1324,12 @@ export function InitiativeDetailView({
               )}
             </CardContent>
           </Card>
+
+          {/* Jira Integration */}
+          <JiraPanel
+            initiativeId={initiative.id}
+            initiativeTitle={initiative.title}
+          />
 
           {/* Source Idea */}
           {initiative.sourceIdea && (
