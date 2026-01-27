@@ -1,6 +1,8 @@
 import { db } from "@/lib/db";
 import { ClientRoadmapView } from "@/components/roadmap/client-roadmap-view";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Client Roadmap",
 };
