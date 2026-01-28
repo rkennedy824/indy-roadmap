@@ -108,6 +108,27 @@ export function ClientRoadmapView({
     return days.findIndex(day => isSameDay(day, today));
   }, [days]);
 
+  // Group days by month for the header
+  const monthGroups = useMemo(() => {
+    const groups: { month: string; year: number; count: number }[] = [];
+    let currentMonth = -1;
+    let currentYear = -1;
+
+    days.forEach((day) => {
+      const month = day.getMonth();
+      const year = day.getFullYear();
+      if (month !== currentMonth || year !== currentYear) {
+        groups.push({ month: format(day, "MMMM"), year, count: 1 });
+        currentMonth = month;
+        currentYear = year;
+      } else {
+        groups[groups.length - 1].count++;
+      }
+    });
+
+    return groups;
+  }, [days]);
+
   // Calculate stats for filter labels
   const stats = useMemo(() => {
     const inProgress = initiatives.filter((i) => i.status === "IN_PROGRESS").length;
@@ -403,8 +424,24 @@ export function ClientRoadmapView({
       <div className="max-w-7xl mx-auto px-4 py-6">
         <ScrollArea className="w-full">
           <div className="min-w-max">
-            {/* Timeline Header */}
-            <div className="flex border rounded-t-lg">
+            {/* Timeline Header - Month Row */}
+            <div className="flex border-x border-t rounded-t-lg">
+              <div className="w-[250px] shrink-0 border-r bg-muted sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" />
+              <div className="flex">
+                {monthGroups.map((group, i) => (
+                  <div
+                    key={i}
+                    className="text-center text-sm font-semibold py-1 border-r bg-muted"
+                    style={{ width: group.count * CELL_WIDTH }}
+                  >
+                    {group.month} {group.year !== new Date().getFullYear() ? group.year : ""}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Timeline Header - Days Row */}
+            <div className="flex border-x border-t">
               <div className="w-[250px] shrink-0 p-3 border-r font-medium bg-muted sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
                 Initiative
               </div>
