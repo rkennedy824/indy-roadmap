@@ -301,11 +301,25 @@ export function ClientRoadmapView({
                       // Use customer-facing content first, then client overview, then internal
                       const displayTitle = init.customerFacingTitle || init.title;
                       const fullText = init.customerFacingDescription || init.clientOverview || init.description || "";
-                      // Get first two sentences as a summary
-                      const sentences = fullText.split(/[.!?]\s/).slice(0, 2);
-                      const summary = sentences.length > 0
-                        ? sentences.join(". ").trim() + (sentences[sentences.length - 1]?.endsWith('.') ? '' : '.')
-                        : "More details coming soon.";
+
+                      // Extract a clean summary from markdown content
+                      const getSummary = (text: string): string => {
+                        if (!text) return "More details coming soon.";
+                        // Remove markdown headers, bullet points, and extra whitespace
+                        const cleaned = text
+                          .replace(/^#+\s+.+$/gm, '') // Remove # headers
+                          .replace(/^\*\*?.+?\*\*?:?\s*/gm, '') // Remove **bold** labels
+                          .replace(/^[-*]\s+/gm, '') // Remove bullet points
+                          .replace(/^\s*\n/gm, ' ') // Replace newlines with spaces
+                          .replace(/\s+/g, ' ') // Normalize whitespace
+                          .trim();
+                        // Get first ~200 chars, ending at a word boundary
+                        if (cleaned.length <= 200) return cleaned;
+                        const truncated = cleaned.slice(0, 200);
+                        const lastSpace = truncated.lastIndexOf(' ');
+                        return (lastSpace > 150 ? truncated.slice(0, lastSpace) : truncated) + '...';
+                      };
+                      const summary = getSummary(fullText);
 
                       // Calculate expected completion from scheduled blocks
                       const latestEndDate = init.scheduledBlocks.length > 0
