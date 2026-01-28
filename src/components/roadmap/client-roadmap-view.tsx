@@ -157,18 +157,33 @@ export function ClientRoadmapView({
     return closestIdx === -1 ? days.length - 1 : Math.max(0, closestIdx);
   };
 
-  const getBlockStyle = (block: ScheduledBlock) => {
-    // Convert UTC dates to local dates to avoid timezone issues
-    const blockStart = toLocalDate(block.startDate);
-    const blockEnd = toLocalDate(block.endDate);
+  // Get the timeline bar style for an initiative
+  // For client view: extends from dev start to production release date (or dev end if no release date)
+  const getInitiativeBarStyle = (initiative: InitiativeWithRelations) => {
+    if (initiative.scheduledBlocks.length === 0) return null;
+
+    // Find earliest start date from scheduled blocks
+    const blockStarts = initiative.scheduledBlocks.map(b => toLocalDate(b.startDate));
+    const earliestStart = new Date(Math.min(...blockStarts.map(d => d.getTime())));
+
+    // Find the end date: use production release date if set, otherwise latest block end
+    const blockEnds = initiative.scheduledBlocks.map(b => toLocalDate(b.endDate));
+    const latestBlockEnd = new Date(Math.max(...blockEnds.map(d => d.getTime())));
+
+    // Use masterTargetDate (production release) if available, otherwise fall back to block end
+    const displayEnd = initiative.masterTargetDate
+      ? toLocalDate(initiative.masterTargetDate)
+      : initiative.betaTargetDate
+        ? toLocalDate(initiative.betaTargetDate)
+        : latestBlockEnd;
 
     // Find the index in the weekday-only days array
-    let startIdx = days.findIndex(day => day >= blockStart);
-    if (startIdx === -1) startIdx = days.length; // Block starts after visible range
+    let startIdx = days.findIndex(day => day >= earliestStart);
+    if (startIdx === -1) startIdx = days.length;
 
-    let endIdx = days.findIndex(day => day > blockEnd);
-    if (endIdx === -1) endIdx = days.length; // Block ends after visible range
-    else endIdx = endIdx - 1; // Go back to last day that's <= blockEnd
+    let endIdx = days.findIndex(day => day > displayEnd);
+    if (endIdx === -1) endIdx = days.length;
+    else endIdx = endIdx - 1;
 
     // Clamp to valid range
     startIdx = Math.max(0, startIdx);
@@ -472,12 +487,12 @@ export function ClientRoadmapView({
                       title="Production Release"
                     />
                   )}
-                  {/* Scheduled blocks (without engineer names) */}
-                  {initiative.scheduledBlocks.map((block) => {
-                    const style = getBlockStyle(block);
+                  {/* Initiative timeline bar (extends to release date for clients) */}
+                  {(() => {
+                    const style = getInitiativeBarStyle(initiative);
+                    if (!style) return null;
                     return (
                       <div
-                        key={block.id}
                         className="absolute top-3 h-8 rounded-md text-white text-xs font-medium px-2 truncate flex items-center"
                         style={{
                           left: style.left,
@@ -490,7 +505,7 @@ export function ClientRoadmapView({
                         </span>
                       </div>
                     );
-                  })}
+                  })()}
                 </div>
               </div>
             ))}
