@@ -304,16 +304,20 @@ export function IdeaList({ ideas, specialties, users, clients }: IdeaListProps) 
                 className="block hover:underline"
               >
                 <div className="flex items-start gap-2">
-                  <span className="font-medium break-words line-clamp-2" title={idea.title}>{idea.title}</span>
-                  {idea._count.comments > 0 && (
-                    <span className="flex items-center text-muted-foreground text-xs">
-                      <MessageSquare className="h-3 w-3 mr-0.5" />
-                      {idea._count.comments}
-                    </span>
-                  )}
-                  {idea.promotedTo && (
-                    <ArrowUpRight className="h-3 w-3 text-emerald-600" />
-                  )}
+                  <div className="flex-1 min-w-0">
+                    <span className="font-medium line-clamp-2" title={idea.title}>{idea.title}</span>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {idea._count.comments > 0 && (
+                      <span className="flex items-center text-muted-foreground text-xs">
+                        <MessageSquare className="h-3 w-3 mr-0.5" />
+                        {idea._count.comments}
+                      </span>
+                    )}
+                    {idea.promotedTo && (
+                      <ArrowUpRight className="h-3 w-3 text-emerald-600" />
+                    )}
+                  </div>
                 </div>
                 {showTags && idea.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1">
