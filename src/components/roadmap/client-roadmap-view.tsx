@@ -330,7 +330,7 @@ export function ClientRoadmapView({
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
-                              <h4 className="font-medium text-sm">{displayTitle}</h4>
+                              <h4 className="font-medium text-sm truncate" title={displayTitle}>{displayTitle}</h4>
                               {displayDate && (
                                 <span className="text-xs text-muted-foreground whitespace-nowrap flex items-center gap-1">
                                   <Rocket className="h-3 w-3" />
@@ -435,7 +435,12 @@ export function ClientRoadmapView({
                 onClick={() => setSelectedInitiative(initiative)}
               >
                 <div className="w-[250px] shrink-0 p-3 border-r bg-background group-hover:bg-muted sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
-                  <div className="font-medium truncate">{initiative.customerFacingTitle || initiative.title}</div>
+                  <div
+                    className="font-medium truncate"
+                    title={initiative.customerFacingTitle || initiative.title}
+                  >
+                    {initiative.customerFacingTitle || initiative.title}
+                  </div>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {initiative.tags.slice(0, 2).map((tag) => (
                       <Badge
