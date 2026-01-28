@@ -303,8 +303,8 @@ export function IdeaList({ ideas, specialties, users, clients }: IdeaListProps) 
                 href={`/ideas/${idea.id}`}
                 className="block hover:underline"
               >
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{idea.title}</span>
+                <div className="flex items-start gap-2">
+                  <span className="font-medium break-words line-clamp-2" title={idea.title}>{idea.title}</span>
                   {idea._count.comments > 0 && (
                     <span className="flex items-center text-muted-foreground text-xs">
                       <MessageSquare className="h-3 w-3 mr-0.5" />
