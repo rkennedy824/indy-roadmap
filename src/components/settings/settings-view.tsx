@@ -34,9 +34,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, Copy, ExternalLink, UsersRound, Pencil, Sparkles, Briefcase, Users, Loader2, Calendar } from "lucide-react";
 import { format, startOfQuarter, endOfQuarter, getYear } from "date-fns";
+import { IntegrationsTab } from "./integrations-tab";
 
 type ShareLinkWithClient = ShareLink & { client: Client | null };
 type SquadWithMembers = Squad & { members: (SquadMember & { engineer: Engineer })[] };
+
+interface JiraConfig {
+  id: string;
+  siteUrl: string;
+  email: string;
+  apiToken: string | null;
+  projectKey: string | null;
+  isActive: boolean;
+  lastSyncAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface SettingsViewProps {
   specialties: Specialty[];
@@ -44,6 +57,7 @@ interface SettingsViewProps {
   clients: Client[];
   squads: SquadWithMembers[];
   engineers: Engineer[];
+  jiraConfig: JiraConfig | null;
 }
 
 export function SettingsView({
@@ -52,12 +66,14 @@ export function SettingsView({
   clients,
   squads,
   engineers,
+  jiraConfig,
 }: SettingsViewProps) {
   const router = useRouter();
   const [isCreatingLink, setIsCreatingLink] = useState(false);
   const [newLinkViewType, setNewLinkViewType] = useState<string>("CLIENT");
   const [newLinkClientId, setNewLinkClientId] = useState<string>("");
   const [newLinkExpiry, setNewLinkExpiry] = useState<string>("30");
+  const [newLinkCustomSlug, setNewLinkCustomSlug] = useState<string>("");
   const [newLinkSelectedQuarters, setNewLinkSelectedQuarters] = useState<string[]>([]);
   const [newLinkCustomRange, setNewLinkCustomRange] = useState(false);
   const [newLinkStartDate, setNewLinkStartDate] = useState<string>(format(startOfQuarter(new Date()), "yyyy-MM-dd"));
@@ -163,6 +179,7 @@ export function SettingsView({
           expiresInDays: newLinkExpiry ? parseInt(newLinkExpiry) : null,
           startDate: newLinkStartDate,
           endDate: newLinkEndDate,
+          customSlug: newLinkCustomSlug || null,
         }),
       });
 
@@ -174,6 +191,7 @@ export function SettingsView({
       setNewLinkViewType("CLIENT");
       setNewLinkClientId("");
       setNewLinkExpiry("30");
+      setNewLinkCustomSlug("");
       setNewLinkSelectedQuarters([]);
       setNewLinkCustomRange(false);
       setNewLinkStartDate(format(startOfQuarter(new Date()), "yyyy-MM-dd"));
@@ -224,8 +242,9 @@ export function SettingsView({
     }
   };
 
-  const copyLink = (token: string) => {
-    const url = `${window.location.origin}/view/${token}`;
+  const copyLink = (token: string, customSlug?: string | null) => {
+    const slug = customSlug || token;
+    const url = `${window.location.origin}/view/${slug}`;
     navigator.clipboard.writeText(url);
     alert("Link copied to clipboard!");
   };
@@ -313,6 +332,7 @@ export function SettingsView({
         <TabsTrigger value="specialties">Specialties</TabsTrigger>
         <TabsTrigger value="squads">Squads</TabsTrigger>
         <TabsTrigger value="sharing">Share Links</TabsTrigger>
+        <TabsTrigger value="integrations">Integrations</TabsTrigger>
       </TabsList>
 
       <TabsContent value="specialties">
@@ -627,6 +647,21 @@ export function SettingsView({
                     </Select>
                   </div>
                   <div className="space-y-2">
+                    <Label>Custom URL Slug (optional)</Label>
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm text-muted-foreground">/view/</span>
+                      <Input
+                        value={newLinkCustomSlug}
+                        onChange={(e) => setNewLinkCustomSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '-'))}
+                        placeholder="e.g., cinepolis-roadmap"
+                        className="flex-1"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Leave empty for auto-generated URL. Only letters, numbers, hyphens, and underscores allowed.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
                     <Label className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
                       Roadmap Date Range
@@ -722,7 +757,11 @@ export function SettingsView({
                 {shareLinks.map((link) => (
                   <TableRow key={link.id}>
                     <TableCell className="font-mono text-sm">
-                      {link.token.slice(0, 8)}...
+                      {link.customSlug ? (
+                        <span className="text-primary">{link.customSlug}</span>
+                      ) : (
+                        <span>{link.token.slice(0, 8)}...</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge
@@ -794,7 +833,7 @@ export function SettingsView({
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => copyLink(link.token)}
+                          onClick={() => copyLink(link.token, link.customSlug)}
                           title="Copy Link"
                         >
                           <Copy className="h-4 w-4" />
@@ -836,6 +875,10 @@ export function SettingsView({
             </Table>
           </CardContent>
         </Card>
+      </TabsContent>
+
+      <TabsContent value="integrations">
+        <IntegrationsTab initialConfig={jiraConfig} />
       </TabsContent>
     </Tabs>
   );

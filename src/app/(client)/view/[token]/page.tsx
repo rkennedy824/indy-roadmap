@@ -10,9 +10,14 @@ export default async function SharedViewPage({
 }) {
   const { token } = await params;
 
-  // Verify share link
-  const shareLink = await db.shareLink.findUnique({
-    where: { token },
+  // Verify share link - lookup by token or customSlug
+  const shareLink = await db.shareLink.findFirst({
+    where: {
+      OR: [
+        { token },
+        { customSlug: token },
+      ],
+    },
     include: { client: true },
   });
 

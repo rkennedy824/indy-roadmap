@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { clientId, expiresInDays, viewType = "CLIENT", startDate, endDate } = body;
+    const { clientId, expiresInDays, viewType = "CLIENT", startDate, endDate, customSlug } = body;
 
     // Validate: executive links shouldn't have clientId
     if (viewType === "EXECUTIVE" && clientId) {
@@ -38,6 +38,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate custom slug format (alphanumeric, hyphens, underscores only)
+    if (customSlug) {
+      if (!/^[a-zA-Z0-9_-]+$/.test(customSlug)) {
+        return NextResponse.json(
+          { error: "Custom slug can only contain letters, numbers, hyphens, and underscores" },
+          { status: 400 }
+        );
+      }
+      // Check if slug is already taken
+      const existing = await db.shareLink.findUnique({ where: { customSlug } });
+      if (existing) {
+        return NextResponse.json(
+          { error: "This custom slug is already in use" },
+          { status: 400 }
+        );
+      }
+    }
+
     const shareLink = await db.shareLink.create({
       data: {
         viewType,
@@ -45,6 +63,7 @@ export async function POST(request: NextRequest) {
         expiresAt: expiresInDays ? addDays(new Date(), expiresInDays) : null,
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
+        customSlug: customSlug || null,
       },
     });
 

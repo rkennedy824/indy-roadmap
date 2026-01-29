@@ -329,12 +329,13 @@ model ClientInitiativeAccess {
 }
 
 model ShareLink {
-  id        String         @id @default(cuid())
-  token     String         @unique @default(cuid())
-  viewType  ShareLinkType  @default(CLIENT)
-  clientId  String?
-  expiresAt DateTime?
-  createdAt DateTime       @default(now())
+  id         String         @id @default(cuid())
+  token      String         @unique @default(cuid())
+  customSlug String?        @unique  // Optional custom URL slug (e.g., "cinepolis-roadmap")
+  viewType   ShareLinkType  @default(CLIENT)
+  clientId   String?
+  expiresAt  DateTime?
+  createdAt  DateTime       @default(now())
 
   // Date range for the roadmap view
   startDate DateTime?
