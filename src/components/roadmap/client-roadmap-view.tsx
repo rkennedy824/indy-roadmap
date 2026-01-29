@@ -29,7 +29,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MultiSelectFilter } from "@/components/ui/multi-select-filter";
 import { DateRangeSelector } from "@/components/ui/date-range-selector";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, ChevronDown, Rocket, Sparkles, Zap, Film } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ChevronLeft, ChevronRight, ChevronDown, Rocket, Sparkles, Zap, Film, Search } from "lucide-react";
 import {
   format,
   startOfQuarter,
@@ -80,6 +81,7 @@ export function ClientRoadmapView({
     useState<InitiativeWithRelations | null>(null);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [specialtyFilter, setSpecialtyFilter] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [inProgressExpanded, setInProgressExpanded] = useState(false);
   const [startDate, setStartDate] = useState(() =>
     initialStartDate ? new Date(initialStartDate) : startOfQuarter(new Date())
@@ -142,6 +144,16 @@ export function ClientRoadmapView({
   const filteredInitiatives = useMemo(() => {
     let filtered = initiatives;
 
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((i) => {
+        const title = (i.customerFacingTitle || i.title).toLowerCase();
+        const description = (i.customerFacingDescription || i.description || "").toLowerCase();
+        return title.includes(query) || description.includes(query);
+      });
+    }
+
     // Status filter
     if (statusFilter.length > 0) {
       filtered = filtered.filter((i) => statusFilter.includes(i.status));
@@ -166,7 +178,7 @@ export function ClientRoadmapView({
     });
 
     return filtered;
-  }, [initiatives, statusFilter, specialtyFilter]);
+  }, [initiatives, searchQuery, statusFilter, specialtyFilter]);
 
   // Find the weekday index for a given date (converted to local date)
   const getWeekdayIndex = (date: Date) => {
@@ -392,6 +404,16 @@ export function ClientRoadmapView({
       <div className="border-b bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search initiatives..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 w-[200px]"
+              />
+            </div>
             <MultiSelectFilter
               options={[
                 { value: "IN_PROGRESS", label: "In Progress" },
