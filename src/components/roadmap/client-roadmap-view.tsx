@@ -30,7 +30,7 @@ import { MultiSelectFilter } from "@/components/ui/multi-select-filter";
 import { DateRangeSelector } from "@/components/ui/date-range-selector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, ChevronRight, ChevronDown, Rocket, Sparkles, Zap, Film, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Rocket, Sparkles, Zap, Film, Search, Calendar, Wrench } from "lucide-react";
 import {
   format,
   startOfQuarter,
@@ -697,6 +697,39 @@ export function ClientRoadmapView({
                           </div>
                         </div>
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Engineering Timeline Card */}
+                {selectedInitiative.scheduledBlocks.length > 0 && (
+                  <div className="rounded-xl border bg-card p-4 shadow-sm">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+                      <Wrench className="h-3.5 w-3.5" />
+                      Development Schedule
+                    </h4>
+                    <div className="space-y-2">
+                      {(() => {
+                        // Calculate overall development period
+                        const startDates = selectedInitiative.scheduledBlocks.map(b => new Date(b.startDate));
+                        const endDates = selectedInitiative.scheduledBlocks.map(b => new Date(b.endDate));
+                        const earliestStart = new Date(Math.min(...startDates.map(d => d.getTime())));
+                        const latestEnd = new Date(Math.max(...endDates.map(d => d.getTime())));
+
+                        return (
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-500/10">
+                              <Calendar className="h-5 w-5 text-purple-500" />
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-xs text-muted-foreground">Development Period</div>
+                              <div className="font-semibold">
+                                {format(earliestStart, "MMM d")} – {format(latestEnd, "MMM d, yyyy")}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 )}

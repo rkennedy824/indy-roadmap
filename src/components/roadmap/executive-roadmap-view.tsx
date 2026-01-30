@@ -46,6 +46,8 @@ import {
   ChevronRight,
   Copy,
   Check,
+  Calendar,
+  Wrench,
 } from "lucide-react";
 import {
   format,
@@ -945,6 +947,36 @@ export function ExecutiveRoadmapView({
                           </span>
                         </div>
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Development Schedule */}
+                {selectedInitiative.scheduledBlocks && selectedInitiative.scheduledBlocks.length > 0 && (
+                  <div>
+                    <h4 className="font-medium mb-2 text-sm flex items-center gap-2">
+                      <Wrench className="h-4 w-4 text-muted-foreground" />
+                      Development Schedule
+                    </h4>
+                    <div className="border rounded-lg px-3 py-2 bg-muted/30">
+                      {(() => {
+                        const startDates = selectedInitiative.scheduledBlocks.map(b => new Date(b.startDate));
+                        const endDates = selectedInitiative.scheduledBlocks.map(b => new Date(b.endDate));
+                        const earliestStart = new Date(Math.min(...startDates.map(d => d.getTime())));
+                        const latestEnd = new Date(Math.max(...endDates.map(d => d.getTime())));
+
+                        return (
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-sm">
+                              <Calendar className="h-4 w-4 text-purple-500" />
+                              <span className="font-medium">Development Period</span>
+                            </div>
+                            <span className="text-sm font-medium">
+                              {format(earliestStart, "MMM d")} – {format(latestEnd, "MMM d, yyyy")}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 )}
